@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import Image from "next/image";
 import ScreenshotModal from "@/components/ScreenshotModal";
+import ChatsOverviewModal from "@/components/ChatsOverviewModal";
+import ChatMessagesModal from "@/components/ChatMessagesModal";
 
 type Session = {
   name: string;
@@ -41,6 +43,20 @@ type WebhookMessage = {
     body: string;
   };
 };
+
+function extractChatItems(data: unknown): Record<string, unknown>[] {
+  if (Array.isArray(data)) return data.filter((item): item is Record<string, unknown> => Boolean(item && typeof item === "object"));
+  if (data && typeof data === "object") {
+    const record = data as Record<string, unknown>;
+    if (Array.isArray(record.chats)) {
+      return record.chats.filter((item): item is Record<string, unknown> => Boolean(item && typeof item === "object"));
+    }
+    if (Array.isArray(record.data)) {
+      return record.data.filter((item): item is Record<string, unknown> => Boolean(item && typeof item === "object"));
+    }
+  }
+  return [];
+}
 
 const EVENT_PRESETS: Record<string, string[]> = {
   minimal: ["session.status", "message"],
@@ -104,6 +120,12 @@ export default function DashboardPage() {
   const [sessionQR, setSessionQR] = useState("");
   const [sessionScreenshot, setSessionScreenshot] = useState("");
   const [isScreenshotModalOpen, setIsScreenshotModalOpen] = useState(false);
+  const [chatsOverview, setChatsOverview] = useState<unknown>(null);
+  const [isChatsModalOpen, setIsChatsModalOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState<unknown>(null);
+  const [isChatMessagesModalOpen, setIsChatMessagesModalOpen] = useState(false);
+  const [selectedChatId, setSelectedChatId] = useState("");
+  const [selectedChatName, setSelectedChatName] = useState("");
 
   const [messages, setMessages] = useState<WebhookMessage[]>([]);
   const [autoMessageRefresh, setAutoMessageRefresh] = useState(true);
@@ -129,6 +151,7 @@ export default function DashboardPage() {
     return map;
   }, [webhooks]);
   const duplicateWebhookCount = Array.from(webhookUrlCounts.values()).filter((c) => c > 1).length;
+  const chatItems = useMemo(() => extractChatItems(chatsOverview), [chatsOverview]);
 
   const loadSessions = useCallback(async () => {
     const response = await fetch("/api/sessions");
@@ -259,6 +282,46 @@ export default function DashboardPage() {
     }, "Screenshot fetched.");
   }, [selectedSession, withStatus]);
 
+  const fetchChatsOverview = useCallback(async (sessionNameArg = selectedSession, limit = 20) => {
+    if (!sessionNameArg) return;
+    await withStatus(async () => {
+      const response = await fetch(
+        `/api/${encodeURIComponent(sessionNameArg)}/chats/overview?limit=${limit}`,
+      );
+      const result = (await response.json()) as { success: boolean; data?: unknown; error?: string };
+      if (!response.ok || !result.success) throw new Error(result.error || "Failed to fetch chats overview");
+      setChatsOverview(result.data ?? null);
+      setIsChatsModalOpen(true);
+    }, "Chats overview fetched.");
+  }, [selectedSession, withStatus]);
+
+  const fetchChatMessages = useCallback(
+    async (
+      chatId: string,
+      chatName = "",
+      sessionNameArg = selectedSession,
+      limit = 20,
+      offset = 0,
+      downloadMedia = false,
+      sortBy = "messageTimestamp",
+      sortOrder = "desc",
+    ) => {
+      if (!sessionNameArg || !chatId) return;
+      await withStatus(async () => {
+        const response = await fetch(
+          `/api/${encodeURIComponent(sessionNameArg)}/chats/${encodeURIComponent(chatId)}/messages?limit=${limit}&offset=${offset}&downloadMedia=${downloadMedia}&sortBy=${encodeURIComponent(sortBy)}&sortOrder=${encodeURIComponent(sortOrder)}`,
+        );
+        const result = (await response.json()) as { success: boolean; data?: unknown; error?: string };
+        if (!response.ok || !result.success) throw new Error(result.error || "Failed to fetch chat messages");
+        setSelectedChatId(chatId);
+        setSelectedChatName(chatName || chatId);
+        setChatMessages(result.data ?? null);
+        setIsChatMessagesModalOpen(true);
+      }, "Chat messages fetched.");
+    },
+    [selectedSession, withStatus],
+  );
+
   async function saveWebhooks(nextWebhooks: SessionWebhook[]) {
     if (!selectedSession) return;
     await withStatus(async () => {
@@ -320,6 +383,12 @@ export default function DashboardPage() {
     setSessionQR("");
     setSessionScreenshot("");
     setIsScreenshotModalOpen(false);
+    setChatsOverview(null);
+    setIsChatsModalOpen(false);
+    setChatMessages(null);
+    setIsChatMessagesModalOpen(false);
+    setSelectedChatId("");
+    setSelectedChatName("");
     void withStatus(async () => {
       await loadSessionDetail(selectedSession);
       await loadMessages();
@@ -547,6 +616,13 @@ export default function DashboardPage() {
                 Fetch Screenshot
               </button>
               <button
+                onClick={() => void fetchChatsOverview()}
+                disabled={!selectedSession || loading}
+                className={btnNeutral}
+              >
+                Fetch Chats
+              </button>
+              <button
                 onClick={() => void stopSession()}
                 disabled={!selectedSession || loading}
                 className={btnDanger}
@@ -569,7 +645,7 @@ export default function DashboardPage() {
               <p><strong>Debug:</strong> {String(Boolean(sessionDetail?.config?.debug))}</p>
             </div>
 
-            <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
+            <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
               <div className="rounded-md border border-[#dbe3f4] bg-white p-3">
                 <p className="mb-1 text-sm font-semibold">Timestamps</p>
                 <div className="max-h-36 overflow-auto text-xs">
@@ -630,6 +706,50 @@ export default function DashboardPage() {
                   )
                 ) : (
                   <p className="text-xs text-[#666]">No screenshot loaded.</p>
+                )}
+              </div>
+              <div className="rounded-md border border-[#dbe3f4] bg-white p-3">
+                <p className="mb-1 text-sm font-semibold">Chats Overview</p>
+                {chatItems.length > 0 ? (
+                  <>
+                    <div className="max-h-44 overflow-auto">
+                      {chatItems.slice(0, 6).map((chat, index) => {
+                        const id = String(chat.id ?? chat.chatId ?? chat.wid ?? `chat-${index + 1}`);
+                        const label = String(chat.name ?? chat.title ?? chat.subject ?? id);
+                        return (
+                          <div key={`${id}-${index}`} className="mb-1 flex items-center justify-between gap-2">
+                            <p className="truncate text-xs">
+                              {index + 1}. {label}
+                            </p>
+                            <button
+                              onClick={() => void fetchChatMessages(id, label)}
+                              className="rounded border border-[#dbe3f4] px-2 py-0.5 text-[10px] text-[rgb(41,98,255)] transition hover:bg-[#f3f7ff]"
+                            >
+                              Messages
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <button
+                      onClick={() => setIsChatsModalOpen(true)}
+                      className={`${btnNeutral} mt-2`}
+                    >
+                      Open Large View
+                    </button>
+                  </>
+                ) : chatsOverview ? (
+                  <>
+                    <p className="text-xs text-[#666]">Payload fetched, but chat list was empty.</p>
+                    <button
+                      onClick={() => setIsChatsModalOpen(true)}
+                      className={`${btnNeutral} mt-2`}
+                    >
+                      Open Raw View
+                    </button>
+                  </>
+                ) : (
+                  <p className="text-xs text-[#666]">No chats loaded.</p>
                 )}
               </div>
             </div>
@@ -817,6 +937,21 @@ export default function DashboardPage() {
         screenshot={sessionScreenshot}
         sessionName={selectedSession}
         onClose={() => setIsScreenshotModalOpen(false)}
+      />
+      <ChatsOverviewModal
+        open={isChatsModalOpen}
+        sessionName={selectedSession}
+        data={chatsOverview}
+        onOpenChat={(chatId, chatName) => void fetchChatMessages(chatId, chatName)}
+        onClose={() => setIsChatsModalOpen(false)}
+      />
+      <ChatMessagesModal
+        open={isChatMessagesModalOpen}
+        sessionName={selectedSession}
+        chatId={selectedChatId}
+        chatName={selectedChatName}
+        data={chatMessages}
+        onClose={() => setIsChatMessagesModalOpen(false)}
       />
     </div>
   );

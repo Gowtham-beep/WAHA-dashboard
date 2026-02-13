@@ -196,6 +196,29 @@ class WAHAClient {
     );
   }
 
+  async getChatMessages(
+    sessionName: string,
+    chatId: string,
+    options?: {
+      limit?: number;
+      offset?: number;
+      downloadMedia?: boolean;
+      sortBy?: "messageTimestamp" | "timestamp";
+      sortOrder?: "asc" | "desc";
+    },
+  ): Promise<unknown> {
+    const limit = Number.isFinite(options?.limit) ? Math.max(1, Math.min(200, Math.trunc(options!.limit!))) : 20;
+    const offset = Number.isFinite(options?.offset) ? Math.max(0, Math.trunc(options!.offset!)) : 0;
+    const downloadMedia = options?.downloadMedia ?? false;
+    const sortBy = options?.sortBy || "messageTimestamp";
+    const sortOrder = options?.sortOrder || "desc";
+
+    return this.request<unknown>(
+      `/api/${encodeURIComponent(sessionName)}/chats/${encodeURIComponent(chatId)}/messages?limit=${limit}&offset=${offset}&downloadMedia=${downloadMedia}&sortBy=${encodeURIComponent(sortBy)}&sortOrder=${encodeURIComponent(sortOrder)}`,
+      { method: "GET" },
+    );
+  }
+
   async setWebhook(sessionName: string, webhookUrl: string): Promise<void> {
     return this.request<void>(`/api/sessions/${sessionName}`, {
       method: "PATCH",
