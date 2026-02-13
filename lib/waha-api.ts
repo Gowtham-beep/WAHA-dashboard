@@ -147,6 +147,55 @@ class WAHAClient {
     }
   }
 
+  async getSessionScreenshot(sessionName: string): Promise<{ screenshot: string }> {
+    try {
+      const response = await fetch(
+        `${this.baseUrl}/api/screenshot?session=${encodeURIComponent(sessionName)}`,
+        {
+          method: "GET",
+          headers: this.buildHeaders({
+            Accept: "application/json, image/png, image/jpeg",
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`WAHA API Error: ${response.status} - ${errorText}`);
+      }
+
+      const contentType = response.headers.get("content-type")?.toLowerCase() || "";
+
+      if (contentType.includes("application/json")) {
+        const data = (await response.json()) as {
+          screenshot?: string;
+          image?: string;
+          data?: string;
+        };
+        return { screenshot: data.screenshot || data.image || data.data || "" };
+      }
+
+      if (contentType.includes("image/png") || contentType.includes("image/jpeg")) {
+        const mime = contentType.includes("image/jpeg") ? "image/jpeg" : "image/png";
+        const buffer = Buffer.from(await response.arrayBuffer());
+        return { screenshot: `data:${mime};base64,${buffer.toString("base64")}` };
+      }
+
+      return { screenshot: await response.text() };
+    } catch (error) {
+      console.error("WAHA API Request Failed:", error);
+      throw error;
+    }
+  }
+
+  async getChatsOverview(sessionName: string, limit = 20): Promise<unknown> {
+    const safeLimit = Number.isFinite(limit) ? Math.max(1, Math.min(200, Math.trunc(limit))) : 20;
+    return this.request<unknown>(
+      `/api/${encodeURIComponent(sessionName)}/chats/overview?limit=${safeLimit}`,
+      { method: "GET" },
+    );
+  }
+
   async setWebhook(sessionName: string, webhookUrl: string): Promise<void> {
     return this.request<void>(`/api/sessions/${sessionName}`, {
       method: "PATCH",

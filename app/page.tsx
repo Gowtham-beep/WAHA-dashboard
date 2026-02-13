@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import Image from "next/image";
+import ScreenshotModal from "@/components/ScreenshotModal";
 
 type Session = {
   name: string;
@@ -101,6 +102,8 @@ export default function DashboardPage() {
   const [selectedSession, setSelectedSession] = useState("");
   const [sessionDetail, setSessionDetail] = useState<SessionDetail | null>(null);
   const [sessionQR, setSessionQR] = useState("");
+  const [sessionScreenshot, setSessionScreenshot] = useState("");
+  const [isScreenshotModalOpen, setIsScreenshotModalOpen] = useState(false);
 
   const [messages, setMessages] = useState<WebhookMessage[]>([]);
   const [autoMessageRefresh, setAutoMessageRefresh] = useState(true);
@@ -240,6 +243,22 @@ export default function DashboardPage() {
     await withStatus(run, "QR fetched.");
   }, [selectedSession, withStatus]);
 
+  const fetchScreenshot = useCallback(async (sessionNameArg = selectedSession) => {
+    if (!sessionNameArg) return;
+    await withStatus(async () => {
+      const response = await fetch(`/api/screenshot?session=${encodeURIComponent(sessionNameArg)}`);
+      const result = (await response.json()) as {
+        success: boolean;
+        data?: { screenshot?: string };
+        error?: string;
+      };
+      if (!response.ok || !result.success) throw new Error(result.error || "Failed to fetch screenshot");
+      const nextScreenshot = result.data?.screenshot || "";
+      setSessionScreenshot(nextScreenshot);
+      setIsScreenshotModalOpen(nextScreenshot.startsWith("data:image/"));
+    }, "Screenshot fetched.");
+  }, [selectedSession, withStatus]);
+
   async function saveWebhooks(nextWebhooks: SessionWebhook[]) {
     if (!selectedSession) return;
     await withStatus(async () => {
@@ -298,6 +317,9 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!selectedSession) return;
+    setSessionQR("");
+    setSessionScreenshot("");
+    setIsScreenshotModalOpen(false);
     void withStatus(async () => {
       await loadSessionDetail(selectedSession);
       await loadMessages();
@@ -518,6 +540,13 @@ export default function DashboardPage() {
                 Fetch QR
               </button>
               <button
+                onClick={() => void fetchScreenshot()}
+                disabled={!selectedSession || loading}
+                className={btnNeutral}
+              >
+                Fetch Screenshot
+              </button>
+              <button
                 onClick={() => void stopSession()}
                 disabled={!selectedSession || loading}
                 className={btnDanger}
@@ -540,7 +569,7 @@ export default function DashboardPage() {
               <p><strong>Debug:</strong> {String(Boolean(sessionDetail?.config?.debug))}</p>
             </div>
 
-            <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
               <div className="rounded-md border border-[#dbe3f4] bg-white p-3">
                 <p className="mb-1 text-sm font-semibold">Timestamps</p>
                 <div className="max-h-36 overflow-auto text-xs">
@@ -569,6 +598,38 @@ export default function DashboardPage() {
                   )
                 ) : (
                   <p className="text-xs text-[#666]">No QR loaded.</p>
+                )}
+              </div>
+              <div className="rounded-md border border-[#dbe3f4] bg-white p-3">
+                <p className="mb-1 text-sm font-semibold">Session Screenshot</p>
+                {sessionScreenshot ? (
+                  sessionScreenshot.startsWith("data:image/") ? (
+                    <>
+                      <button
+                        onClick={() => setIsScreenshotModalOpen(true)}
+                        className="block w-full cursor-zoom-in rounded-md border border-[#dbe3f4] transition hover:border-[#b7caef] hover:bg-[#f3f7ff]"
+                      >
+                        <Image
+                          src={sessionScreenshot}
+                          alt="WhatsApp session screenshot"
+                          width={480}
+                          height={300}
+                          unoptimized
+                          className="mx-auto h-auto max-h-72 w-full rounded-md bg-white object-contain p-2"
+                        />
+                      </button>
+                      <button
+                        onClick={() => setIsScreenshotModalOpen(true)}
+                        className={`${btnNeutral} mt-2`}
+                      >
+                        Open Large View
+                      </button>
+                    </>
+                  ) : (
+                    <pre className="max-h-36 overflow-auto text-xs">{sessionScreenshot}</pre>
+                  )
+                ) : (
+                  <p className="text-xs text-[#666]">No screenshot loaded.</p>
                 )}
               </div>
             </div>
@@ -751,6 +812,12 @@ export default function DashboardPage() {
           </p>
         </section>
       </main>
+      <ScreenshotModal
+        open={isScreenshotModalOpen}
+        screenshot={sessionScreenshot}
+        sessionName={selectedSession}
+        onClose={() => setIsScreenshotModalOpen(false)}
+      />
     </div>
   );
 }
