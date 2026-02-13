@@ -77,7 +77,6 @@ export default function ChatsOverviewModal({
   }, [open, onClose]);
 
   const rows = useMemo(() => getChatRows(data), [data]);
-  const raw = useMemo(() => JSON.stringify(data, null, 2), [data]);
 
   if (!open) return null;
 
@@ -101,51 +100,45 @@ export default function ChatsOverviewModal({
             Close
           </button>
         </div>
-        <div className="grid min-h-0 grid-cols-1 gap-3 xl:grid-cols-2">
-          <div className="min-h-0 overflow-auto rounded-lg border border-[#dbe3f4]">
-            <table className="min-w-full text-left text-sm">
-              <thead className="sticky top-0 bg-[#f5f8ff]">
-                <tr>
-                  <th className="border-b border-[#dbe3f4] px-3 py-2">Chat</th>
-                  <th className="border-b border-[#dbe3f4] px-3 py-2">Last Message</th>
-                  <th className="border-b border-[#dbe3f4] px-3 py-2">Unread</th>
-                  <th className="border-b border-[#dbe3f4] px-3 py-2">Action</th>
+        <div className="min-h-0 overflow-auto rounded-lg border border-[#dbe3f4]">
+          <table className="min-w-full text-left text-sm">
+            <thead className="sticky top-0 bg-[#f5f8ff]">
+              <tr>
+                <th className="border-b border-[#dbe3f4] px-3 py-2">Chat</th>
+                <th className="border-b border-[#dbe3f4] px-3 py-2">Last Message</th>
+                <th className="border-b border-[#dbe3f4] px-3 py-2">Unread</th>
+                <th className="border-b border-[#dbe3f4] px-3 py-2">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr key={row.id} className="border-b border-[#dbe3f4]">
+                  <td className="px-3 py-2">
+                    <p className="font-medium">{row.title}</p>
+                    <p className="text-xs text-[#666]">{row.id}</p>
+                    <p className="text-xs text-[#666]">{row.timestamp}</p>
+                  </td>
+                  <td className="max-w-[340px] truncate px-3 py-2">{row.lastMessage}</td>
+                  <td className="px-3 py-2">{row.unread}</td>
+                  <td className="px-3 py-2">
+                    <button
+                      onClick={() => onOpenChat(row.id, row.title)}
+                      className="rounded-md border border-[#dbe3f4] px-2 py-1 text-xs font-medium text-[rgb(41,98,255)] transition hover:bg-[#f3f7ff]"
+                    >
+                      Open Messages
+                    </button>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => (
-                  <tr key={row.id} className="border-b border-[#dbe3f4]">
-                    <td className="px-3 py-2">
-                      <p className="font-medium">{row.title}</p>
-                      <p className="text-xs text-[#666]">{row.id}</p>
-                      <p className="text-xs text-[#666]">{row.timestamp}</p>
-                    </td>
-                    <td className="max-w-[340px] truncate px-3 py-2">{row.lastMessage}</td>
-                    <td className="px-3 py-2">{row.unread}</td>
-                    <td className="px-3 py-2">
-                      <button
-                        onClick={() => onOpenChat(row.id, row.title)}
-                        className="rounded-md border border-[#dbe3f4] px-2 py-1 text-xs font-medium text-[rgb(41,98,255)] transition hover:bg-[#f3f7ff]"
-                      >
-                        Open Messages
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {rows.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="px-3 py-6 text-center text-[#666]">
-                      No chat rows detected in payload.
-                    </td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
-          </div>
-          <div className="min-h-0 overflow-auto rounded-lg border border-[#dbe3f4] bg-[#f8fbff] p-3">
-            <p className="mb-2 text-sm font-semibold">Raw Payload</p>
-            <pre className="text-xs">{raw || "{}"}</pre>
-          </div>
+              ))}
+              {rows.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-3 py-6 text-center text-[#666]">
+                    No chat rows detected in payload.
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

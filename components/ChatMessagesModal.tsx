@@ -74,7 +74,6 @@ export default function ChatMessagesModal({
   }, [open, onClose]);
 
   const rows = useMemo(() => toRows(data), [data]);
-  const raw = useMemo(() => JSON.stringify(data, null, 2), [data]);
 
   if (!open) return null;
 
@@ -101,28 +100,22 @@ export default function ChatMessagesModal({
             Close
           </button>
         </div>
-        <div className="grid min-h-0 grid-cols-1 gap-3 xl:grid-cols-2">
-          <div className="min-h-0 overflow-auto rounded-lg border border-[#dbe3f4] bg-[#f8fbff] p-3">
-            <div className="space-y-2">
-              {rows.map((row) => (
-                <div key={row.id} className="rounded-md border border-[#dbe3f4] bg-white p-2 text-sm">
-                  <div className="mb-1 flex flex-wrap items-center gap-2 text-xs text-[#666]">
-                    <span>{row.fromMe ? "You" : row.from}</span>
-                    <span>•</span>
-                    <span>{row.timestamp}</span>
-                    {row.hasMedia ? <span className="rounded bg-[#eef4ff] px-2 py-0.5">media</span> : null}
-                  </div>
-                  <p className="break-words">{row.body}</p>
+        <div className="min-h-0 overflow-auto rounded-lg border border-[#dbe3f4] bg-[#f8fbff] p-3">
+          <div className="space-y-2">
+            {rows.map((row) => (
+              <div key={row.id} className="rounded-md border border-[#dbe3f4] bg-white p-2 text-sm">
+                <div className="mb-1 flex flex-wrap items-center gap-2 text-xs text-[#666]">
+                  <span>{row.fromMe ? "You" : row.from}</span>
+                  <span>•</span>
+                  <span>{row.timestamp}</span>
+                  {row.hasMedia ? <span className="rounded bg-[#eef4ff] px-2 py-0.5">media</span> : null}
                 </div>
-              ))}
-              {rows.length === 0 ? (
-                <p className="py-6 text-center text-sm text-[#666]">No messages found in payload.</p>
-              ) : null}
-            </div>
-          </div>
-          <div className="min-h-0 overflow-auto rounded-lg border border-[#dbe3f4] bg-[#f8fbff] p-3">
-            <p className="mb-2 text-sm font-semibold">Raw Payload</p>
-            <pre className="text-xs">{raw || "{}"}</pre>
+                <p className="break-words">{row.body}</p>
+              </div>
+            ))}
+            {rows.length === 0 ? (
+              <p className="py-6 text-center text-sm text-[#666]">No messages found in payload.</p>
+            ) : null}
           </div>
         </div>
       </div>
