@@ -7,15 +7,7 @@ type SendMessageBody = {
   text?: string;
 };
 
-/**
- * POST /api/messages/send
- * Send a WhatsApp message via WAHA
- *
- * Body params:
- * - session: WhatsApp session name
- * - chatId: Recipient phone number (format: 1234567890@c.us)
- * - text: Message content
- */
+// POST /api/messages/send - Send a WhatsApp text message via WAHA.
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as SendMessageBody;

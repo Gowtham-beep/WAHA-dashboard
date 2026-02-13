@@ -1,10 +1,7 @@
 import { NextResponse } from "next/server";
 import { wahaClient } from "@/lib/waha-api";
 
-/**
- * GET /api/sessions
- * Fetch all WhatsApp sessions from WAHA
- */
+// GET /api/sessions - Fetch all WhatsApp sessions from WAHA.
 export async function GET() {
   try {
     const sessions = await wahaClient.getSessions();
@@ -26,10 +23,7 @@ export async function GET() {
   }
 }
 
-/**
- * POST /api/sessions
- * Start a new WhatsApp session
- */
+// POST /api/sessions - Start a new WhatsApp session.
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as { sessionName?: string };

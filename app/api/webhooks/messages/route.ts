@@ -20,10 +20,7 @@ function isWebhookMessage(payload: unknown): payload is WebhookMessage {
   );
 }
 
-/**
- * POST /api/webhooks/messages
- * Receive incoming WhatsApp messages from WAHA
- */
+// POST /api/webhooks/messages - Receive incoming WhatsApp messages from WAHA.
 export async function POST(request: NextRequest) {
   try {
     const payload = (await request.json()) as unknown;
@@ -66,10 +63,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-/**
- * GET /api/webhooks/messages
- * Retrieve stored messages (for dashboard display)
- */
+// GET /api/webhooks/messages - Retrieve stored messages for dashboard display.
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -104,10 +98,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-/**
- * DELETE /api/webhooks/messages
- * Clear all stored messages
- */
+// DELETE /api/webhooks/messages - Clear all stored messages.
 export async function DELETE() {
   try {
     receivedMessages = [];

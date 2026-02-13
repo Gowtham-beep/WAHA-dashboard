@@ -7,6 +7,8 @@ The app supports:
 - Sending WhatsApp messages
 - Receiving incoming messages via webhook
 - Viewing and clearing message history in the dashboard
+- QR and session screenshot preview (with large popup view)
+- Chats overview + per-chat message viewer
 
 ## Demo Scope and Approach
 
@@ -50,13 +52,17 @@ What I deliberately avoided:
 app/
   api/
     sessions/route.ts             # GET list sessions, POST start session
+    sessions/[sessionName]/qr     # GET session QR
+    screenshot/route.ts           # GET session screenshot
+    [sessionName]/chats/overview  # GET chats overview
+    [sessionName]/chats/[chatId]/messages # GET chat messages
     messages/send/route.ts        # POST send WhatsApp text message
     webhooks/messages/route.ts    # POST receive webhook, GET history, DELETE clear
   page.tsx                        # Main dashboard page
 components/
-  SessionManager.tsx              # Session list + create/start
-  MessageSender.tsx               # Send message form
-  MessageHistory.tsx              # Incoming messages list + clear
+  ScreenshotModal.tsx             # Large screenshot popup
+  ChatsOverviewModal.tsx          # Chats table popup
+  ChatMessagesModal.tsx           # Per-chat message popup
 lib/
   waha-api.ts                     # WAHA client wrapper and shared types
 ```
@@ -68,6 +74,7 @@ Create/update `.env`:
 ```env
 WAHA_API_URL=http://localhost:3000
 WAHA_API_KEY=your_waha_api_key
+WAHA_PASSWORD=your_waha_password_optional
 ```
 
 Notes:
@@ -123,21 +130,31 @@ Behavior:
 `DELETE /api/webhooks/messages`
 - Clears stored messages.
 
+### 4) QR + Screenshot
+
+`GET /api/sessions/{sessionName}/qr`
+- Fetches session QR payload (handles image/json formats).
+
+`GET /api/screenshot?session=default`
+- Fetches session screenshot.
+
+### 5) Chats
+
+`GET /api/{sessionName}/chats/overview?limit=20`
+- Returns chats overview array/object from WAHA.
+
+`GET /api/{sessionName}/chats/{chatId}/messages?limit=20&offset=0&downloadMedia=false&sortBy=messageTimestamp&sortOrder=desc`
+- Fetches messages for a specific chat.
+
 ## UI Features
 
-### SessionManager
-- Fetches sessions
-- Starts new session
-- Lets user select active session
-
-### MessageSender
-- Sends message using selected session
-- Simple validation and success/error feedback
-
-### MessageHistory
-- Reads incoming webhook messages
-- Filters by selected session
-- Manual refresh and clear actions
+- Session list + start + stop
+- Live status/QR fetch + QR image preview
+- Screenshot fetch + large popup preview
+- Chats overview fetch + large popup
+- Per-chat message fetch + large popup
+- Message send panel
+- Incoming webhook history with refresh/clear
 
 ## Running Locally
 
@@ -155,22 +172,30 @@ npm install
 npm run dev
 ```
 
-4. Open:
+4. Open dashboard:
 
-`http://localhost:3000`
+`http://localhost:3000` (or the next free port if `3000` is used)
+
+If `3000` is already used by WAHA, Next.js usually starts at `3001`.
 
 ## Quick API Testing (curl)
+
+### Set dashboard URL for curl examples
+
+```bash
+export DASHBOARD_URL=http://localhost:3001
+```
 
 ### List sessions
 
 ```bash
-curl http://localhost:3000/api/sessions
+curl $DASHBOARD_URL/api/sessions
 ```
 
 ### Start session
 
 ```bash
-curl -X POST http://localhost:3000/api/sessions \
+curl -X POST $DASHBOARD_URL/api/sessions \
   -H "Content-Type: application/json" \
   -d '{"sessionName":"default"}'
 ```
@@ -178,7 +203,7 @@ curl -X POST http://localhost:3000/api/sessions \
 ### Send message
 
 ```bash
-curl -X POST http://localhost:3000/api/messages/send \
+curl -X POST $DASHBOARD_URL/api/messages/send \
   -H "Content-Type: application/json" \
   -d '{"session":"default","chatId":"1234567890","text":"Hello"}'
 ```
@@ -186,14 +211,38 @@ curl -X POST http://localhost:3000/api/messages/send \
 ### Read webhook history
 
 ```bash
-curl "http://localhost:3000/api/webhooks/messages?limit=20"
+curl "$DASHBOARD_URL/api/webhooks/messages?limit=20"
+```
+
+### Fetch screenshot
+
+```bash
+curl "$DASHBOARD_URL/api/screenshot?session=default"
+```
+
+### Chats overview
+
+```bash
+curl "$DASHBOARD_URL/api/default/chats/overview?limit=20"
+```
+
+### Chat messages
+
+```bash
+curl "$DASHBOARD_URL/api/default/chats/919886618980%40c.us/messages?limit=20&offset=0&downloadMedia=false&sortBy=messageTimestamp&sortOrder=desc"
 ```
 
 ## Webhook Setup with WAHA
 
 WAHA must be configured to post incoming messages to:
 
-`http://<your-dashboard-host>/api/webhooks/messages`
+`http://<your-dashboard-host>:<dashboard-port>/api/webhooks/messages`
+
+Important:
+- This URL must point to the Next.js dashboard server, not WAHA.
+- WAHA API endpoints use `X-Api-Key`; dashboard webhook endpoint does not.
+- If you call WAHA by mistake, you may see:
+  - `{"message":"Unauthorized","statusCode":401}`
 
 For local development, expose your local server using a tunnel (for example ngrok) and register that public URL in WAHA webhook config.
 
