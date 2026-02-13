@@ -221,7 +221,7 @@ class WAHAClient {
 
   async setWebhook(sessionName: string, webhookUrl: string): Promise<void> {
     return this.request<void>(`/api/sessions/${sessionName}`, {
-      method: "PATCH",
+      method: "PUT",
       body: JSON.stringify({
         config: {
           webhooks: [
@@ -237,7 +237,7 @@ class WAHAClient {
 
   async updateSessionWebhooks(sessionName: string, webhooks: SessionWebhook[]): Promise<void> {
     return this.request<void>(`/api/sessions/${sessionName}`, {
-      method: "PATCH",
+      method: "PUT",
       body: JSON.stringify({
         config: {
           webhooks,
