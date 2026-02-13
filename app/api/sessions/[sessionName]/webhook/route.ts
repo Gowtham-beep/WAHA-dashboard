@@ -1,18 +1,47 @@
 import { NextRequest, NextResponse } from "next/server";
-import { wahaClient } from "@/lib/waha-api";
+import { SessionWebhook, wahaClient } from "@/lib/waha-api";
 
 type Params = {
   params: Promise<{ sessionName: string }>;
 };
 
+export async function GET(_request: NextRequest, { params }: Params) {
+  try {
+    const { sessionName } = await params;
+    const session = (await wahaClient.getSession(sessionName)) as {
+      config?: { webhooks?: SessionWebhook[] };
+    };
+    return NextResponse.json({
+      success: true,
+      data: session.config?.webhooks || [],
+    });
+  } catch (error: unknown) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to get webhooks",
+      },
+      { status: 500 },
+    );
+  }
+}
+
 export async function PATCH(request: NextRequest, { params }: Params) {
   try {
     const { sessionName } = await params;
-    const body = (await request.json()) as { webhookUrl?: string };
+    const body = (await request.json()) as {
+      webhookUrl?: string;
+      webhooks?: SessionWebhook[];
+    };
+
+    if (Array.isArray(body.webhooks)) {
+      await wahaClient.updateSessionWebhooks(sessionName, body.webhooks);
+      return NextResponse.json({ success: true, message: "Webhooks updated" });
+    }
 
     if (!body.webhookUrl) {
       return NextResponse.json(
-        { success: false, error: "webhookUrl is required" },
+        { success: false, error: "webhookUrl or webhooks is required" },
         { status: 400 },
       );
     }

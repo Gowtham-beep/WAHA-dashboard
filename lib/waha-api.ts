@@ -36,6 +36,18 @@ interface WebhookMessage {
   };
 }
 
+interface SessionWebhook {
+  url: string;
+  events: string[];
+  hmac?: { key: string | null };
+  retries?: {
+    delaySeconds: number;
+    attempts: number;
+    policy: string;
+  };
+  customHeaders?: Record<string, string> | null;
+}
+
 class WAHAClient {
   private readonly baseUrl: string;
   private readonly apiKey: string;
@@ -123,11 +135,28 @@ class WAHAClient {
       }),
     });
   }
+
+  async updateSessionWebhooks(sessionName: string, webhooks: SessionWebhook[]): Promise<void> {
+    return this.request<void>(`/api/sessions/${sessionName}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        config: {
+          webhooks,
+        },
+      }),
+    });
+  }
 }
 
 export const wahaClient = new WAHAClient({
-  baseUrl: process.env.WAHA_API_URL||"http://localhost:8080" ,
+  baseUrl: process.env.WAHA_API_URL || "http://localhost:3000",
   apiKey: process.env.WAHA_API_KEY || "your-api-key",
 });
 
-export type { Session, SendMessageRequest, SendMessageResponse, WebhookMessage };
+export type {
+  Session,
+  SendMessageRequest,
+  SendMessageResponse,
+  WebhookMessage,
+  SessionWebhook,
+};
