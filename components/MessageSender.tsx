@@ -64,11 +64,11 @@ export default function MessageSender({
   }
 
   return (
-    <section className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-      <h2 className="text-lg font-semibold text-gray-900">Send Message</h2>
-      <p className="mt-1 text-sm text-gray-600">
+    <section className="rounded-lg border border-[#dbe3f4] bg-white p-4 shadow-sm backdrop-blur">
+      <h2 className="text-lg font-semibold text-black">Send Message</h2>
+      <p className="mt-1 text-sm text-[#333]">
         Current session:{" "}
-        <span className="font-medium text-gray-900">{selectedSession || "Not selected"}</span>
+        <span className="font-medium text-black">{selectedSession || "Not selected"}</span>
       </p>
 
       <form onSubmit={onSubmit} className="mt-4 space-y-3">
@@ -77,26 +77,26 @@ export default function MessageSender({
           value={chatId}
           onChange={(e) => setChatId(e.target.value)}
           placeholder="Recipient (e.g. 1234567890 or 1234567890@c.us)"
-          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-500"
+          className="w-full rounded-md border border-[#dbe3f4] bg-white px-3 py-2 text-sm text-black outline-none focus:border-[rgb(41,98,255)]"
         />
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Type your message..."
           rows={4}
-          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-500"
+          className="w-full rounded-md border border-[#dbe3f4] bg-white px-3 py-2 text-sm text-black outline-none focus:border-[rgb(41,98,255)]"
         />
         <button
           type="submit"
           disabled={loading || !selectedSession || !chatId.trim() || !text.trim()}
-          className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+          className="rounded-md bg-[#2D99FF] px-4 py-2 text-sm font-medium text-white hover:bg-[#826AF9] disabled:opacity-60"
         >
           {loading ? "Sending..." : "Send"}
         </button>
       </form>
 
       {status ? (
-        <p className={`mt-3 text-sm ${status.type === "ok" ? "text-green-700" : "text-red-600"}`}>
+        <p className={`mt-3 text-sm ${status.type === "ok" ? "text-[#2D99FF]" : "text-[#ff7a7a]"}`}>
           {status.text}
         </p>
       ) : null}

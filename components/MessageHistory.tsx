@@ -88,11 +88,11 @@ export default function MessageHistory({ selectedSession, refreshTrigger }: Mess
   }, [autoRefresh, loadMessages]);
 
   return (
-    <section className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+    <section className="rounded-lg border border-[#dbe3f4] bg-white p-4 shadow-sm backdrop-blur">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900">Received Messages</h2>
+        <h2 className="text-lg font-semibold text-black">Received Messages</h2>
         <div className="flex items-center gap-3">
-          <label className="flex items-center gap-2 text-sm text-gray-700">
+          <label className="flex items-center gap-2 text-sm text-[#333]">
             <input
               type="checkbox"
               checked={autoRefresh}
@@ -104,39 +104,39 @@ export default function MessageHistory({ selectedSession, refreshTrigger }: Mess
           <button
             onClick={() => void loadMessages()}
             disabled={loading}
-            className="text-sm font-medium text-gray-700 underline disabled:opacity-60"
+            className="text-sm font-medium text-[#333] underline disabled:opacity-60"
           >
             Refresh
           </button>
           <button
             onClick={() => void clearMessages()}
             disabled={loading}
-            className="text-sm font-medium text-red-700 underline disabled:opacity-60"
+            className="text-sm font-medium text-[#ff7a7a] underline disabled:opacity-60"
           >
             Clear
           </button>
         </div>
       </div>
 
-      <p className="mt-1 text-sm text-gray-600">
+      <p className="mt-1 text-sm text-[#333]">
         Showing {messages.length} message(s){selectedSession ? ` for ${selectedSession}` : ""}.
       </p>
 
-      {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
+      {error ? <p className="mt-3 text-sm text-[#ff7a7a]">{error}</p> : null}
 
       <div className="mt-4 space-y-3">
         {!loading && messages.length === 0 ? (
-          <p className="text-sm text-gray-500">No messages yet.</p>
+          <p className="text-sm text-[#666]">No messages yet.</p>
         ) : null}
 
         {messages.map((msg) => (
-          <article key={msg.payload.id} className="rounded-md border border-gray-200 p-3">
-            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-gray-500">
+          <article key={msg.payload.id} className="rounded-md border border-[#dbe3f4] bg-[#f7f9ff] p-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[#666]">
               <span>From: {msg.payload.from}</span>
               <span>{new Date(msg.payload.timestamp).toLocaleString()}</span>
             </div>
-            <p className="mt-2 text-sm text-gray-900">{msg.payload.body || "(empty message)"}</p>
-            <p className="mt-1 text-xs text-gray-500">Session: {msg.session}</p>
+            <p className="mt-2 text-sm text-black">{msg.payload.body || "(empty message)"}</p>
+            <p className="mt-1 text-xs text-[#666]">Session: {msg.session}</p>
           </article>
         ))}
       </div>

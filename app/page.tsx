@@ -68,10 +68,12 @@ function isWorking(status: string): boolean {
 }
 
 function statusClass(status: string): string {
-  if (status.includes("WORK")) return "border-[#b11a21]/40 bg-[#b11a21]/10 text-[#b11a21]";
+  if (status.includes("WORK")) {
+    return "border-[rgb(41,98,255)] bg-[rgba(41,98,255,0.18)] text-[rgb(41,98,255)]";
+  }
   if (status.includes("STOP") || status.includes("FAIL"))
-    return "border-[#e74c3c]/40 bg-[#e74c3c]/10 text-[#e74c3c]";
-  return "border-[#bdc3c7] bg-[#f1f0ee] text-[#2c3e50]";
+    return "border-[#FF6C40]/40 bg-[#FF6C40]/10 text-[#FF6C40]";
+  return "border-[#dbe3f4] bg-white text-black";
 }
 
 export default function DashboardPage() {
@@ -302,8 +304,14 @@ export default function DashboardPage() {
   const sessionTimestamps = Object.entries(sessionDetail?.timestamps || {});
 
   return (
-    <div className="min-h-screen bg-[#f1f0ee] text-[#2c3e50]">
-      <header className="border-b-4 border-[#f39c12] bg-[#b11a21] text-[#f1f0ee]">
+    <div
+      className="min-h-screen bg-white text-black"
+      style={{
+        backgroundImage:
+          "linear-gradient(135deg, rgba(130,106,249,0.14) 0%, rgba(45,153,255,0.12) 45%, rgba(44,217,197,0.1) 100%)",
+      }}
+    >
+      <header className="border-b border-[#dbe3f4] bg-white text-black backdrop-blur">
         <div className="mx-auto flex max-w-[1800px] items-center justify-between px-4 py-4 sm:px-6">
           <h1 className="text-2xl font-semibold sm:text-3xl">WAHA Ops Dashboard</h1>
           <div className="text-sm sm:text-base">{selectedSession ? `Session: ${selectedSession}` : "No session selected"}</div>
@@ -312,18 +320,18 @@ export default function DashboardPage() {
 
       <main className="mx-auto max-w-[1800px] space-y-4 px-4 py-4 sm:px-6">
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <article className="rounded-xl border border-[#bdc3c7] bg-white p-4">
-            <p className="text-sm text-[#2c3e50]">Sessions</p>
+          <article className="rounded-xl border border-[#dbe3f4] bg-white p-4">
+            <p className="text-sm text-black">Sessions</p>
             <p className="mt-1 text-3xl font-bold">{sessions.length}</p>
           </article>
-          <article className="rounded-xl border border-[#bdc3c7] bg-white p-4">
-            <p className="text-sm text-[#2c3e50]">Current Status</p>
+          <article className="rounded-xl border border-[#dbe3f4] bg-white p-4">
+            <p className="text-sm text-black">Current Status</p>
             <p className={`mt-2 inline-block rounded-md border px-2 py-1 text-sm font-semibold ${statusClass(selectedStatus)}`}>
               {selectedStatus}
             </p>
           </article>
-          <article className="rounded-xl border border-[#bdc3c7] bg-white p-4">
-            <p className="text-sm text-[#2c3e50]">Webhook Health</p>
+          <article className="rounded-xl border border-[#dbe3f4] bg-white p-4">
+            <p className="text-sm text-black">Webhook Health</p>
             <p className="mt-1 text-lg font-semibold">
               {webhooks.length} configured, {duplicateWebhookCount} duplicate URL(s)
             </p>
@@ -331,12 +339,12 @@ export default function DashboardPage() {
         </section>
 
         <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-          <article className="rounded-xl border border-[#3a4b64] bg-[#1b2a3f] p-4 text-[#e8edf6]">
+          <article className="rounded-xl border border-[#dbe3f4] bg-[#ffffff] p-4 text-[#000000]">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-xl font-semibold">Sessions</h2>
               <button
                 onClick={() => void withStatus(loadSessions, "Sessions refreshed.")}
-                className="rounded-md border border-[#3a4b64] px-2 py-1 text-sm text-[#d0dae8]"
+                className="rounded-md border border-[#dbe3f4] px-2 py-1 text-sm text-[#111111]"
               >
                 ↻
               </button>
@@ -347,7 +355,7 @@ export default function DashboardPage() {
                 <button
                   type="submit"
                   disabled={loading || !sessionName.trim()}
-                  className="rounded-md bg-[#3ddc84] px-4 py-2 font-semibold text-[#10212f] disabled:opacity-60"
+                  className="rounded-md bg-[#2D99FF] px-4 py-2 font-semibold text-white hover:bg-[#826AF9] disabled:opacity-60"
                 >
                   ▷ Start New
                 </button>
@@ -355,52 +363,52 @@ export default function DashboardPage() {
                   value={sessionName}
                   onChange={(e) => setSessionName(e.target.value)}
                   placeholder="Session name"
-                  className="rounded-md border border-[#3a4b64] bg-[#0f1c2f] px-3 py-2 text-sm text-[#e8edf6] outline-none"
+                  className="rounded-md border border-[#dbe3f4] bg-[#ffffff] px-3 py-2 text-sm text-[#000000] outline-none"
                 />
               </form>
               <div className="flex items-center gap-2">
                 <input
                   placeholder="Search by Name, Phone"
-                  className="rounded-md border border-[#3a4b64] bg-[#0f1c2f] px-3 py-2 text-sm text-[#d0dae8] outline-none"
+                  className="rounded-md border border-[#dbe3f4] bg-[#ffffff] px-3 py-2 text-sm text-[#111111] outline-none"
                 />
-                <button className="rounded-md border border-[#3a4b64] bg-[#0f1c2f] px-3 py-2 text-sm text-[#d0dae8]">
+                <button className="rounded-md border border-[#dbe3f4] bg-[#ffffff] px-3 py-2 text-sm text-[#111111]">
                   Columns ▾
                 </button>
               </div>
             </div>
 
-            <div className="overflow-x-auto rounded-md border border-[#3a4b64]">
+            <div className="overflow-x-auto rounded-md border border-[#dbe3f4]">
               <table className="min-w-full text-left text-sm">
-                <thead className="bg-[#1f324a]">
+                <thead className="bg-[#f5f8ff]">
                   <tr>
-                    <th className="w-10 border-b border-[#3a4b64] px-3 py-2" />
-                    <th className="border-b border-[#3a4b64] px-3 py-2">Name</th>
-                    <th className="border-b border-[#3a4b64] px-3 py-2">Account</th>
-                    <th className="border-b border-[#3a4b64] px-3 py-2">Status</th>
-                    <th className="border-b border-[#3a4b64] px-3 py-2">Actions</th>
+                    <th className="w-10 border-b border-[#dbe3f4] px-3 py-2" />
+                    <th className="border-b border-[#dbe3f4] px-3 py-2">Name</th>
+                    <th className="border-b border-[#dbe3f4] px-3 py-2">Account</th>
+                    <th className="border-b border-[#dbe3f4] px-3 py-2">Status</th>
+                    <th className="border-b border-[#dbe3f4] px-3 py-2">Actions</th>
                   </tr>
-                  <tr className="bg-[#1b2a3f]">
-                    <th className="border-b border-[#3a4b64] px-3 py-2">
-                      <div className="h-5 w-5 rounded border border-[#4a5c78]" />
+                  <tr className="bg-[#ffffff]">
+                    <th className="border-b border-[#dbe3f4] px-3 py-2">
+                      <div className="h-5 w-5 rounded border border-[#dbe3f4]" />
                     </th>
-                    <th className="border-b border-[#3a4b64] px-3 py-2">
+                    <th className="border-b border-[#dbe3f4] px-3 py-2">
                       <input
                         placeholder="Session"
-                        className="w-full rounded-md border border-[#3a4b64] bg-[#0f1c2f] px-2 py-1 text-[#d0dae8] outline-none"
+                        className="w-full rounded-md border border-[#dbe3f4] bg-[#ffffff] px-2 py-1 text-[#111111] outline-none"
                       />
                     </th>
-                    <th className="border-b border-[#3a4b64] px-3 py-2">
+                    <th className="border-b border-[#dbe3f4] px-3 py-2">
                       <input
                         placeholder="Account (Phone Number)"
-                        className="w-full rounded-md border border-[#3a4b64] bg-[#0f1c2f] px-2 py-1 text-[#d0dae8] outline-none"
+                        className="w-full rounded-md border border-[#dbe3f4] bg-[#ffffff] px-2 py-1 text-[#111111] outline-none"
                       />
                     </th>
-                    <th className="border-b border-[#3a4b64] px-3 py-2">
-                      <select className="w-full rounded-md border border-[#3a4b64] bg-[#0f1c2f] px-2 py-1 text-[#d0dae8] outline-none">
+                    <th className="border-b border-[#dbe3f4] px-3 py-2">
+                      <select className="w-full rounded-md border border-[#dbe3f4] bg-[#ffffff] px-2 py-1 text-[#111111] outline-none">
                         <option>Any</option>
                       </select>
                     </th>
-                    <th className="border-b border-[#3a4b64] px-3 py-2" />
+                    <th className="border-b border-[#dbe3f4] px-3 py-2" />
                   </tr>
                 </thead>
                 <tbody>
@@ -410,13 +418,13 @@ export default function DashboardPage() {
                     return (
                       <tr
                         key={session.name}
-                        className={`border-b border-[#3a4b64] ${selected ? "bg-[#254b52]" : "bg-[#1b2a3f]"}`}
+                        className={`border-b border-[#dbe3f4] ${selected ? "bg-[rgba(41,98,255,0.22)]" : "bg-[#ffffff]"}`}
                       >
                         <td className="px-3 py-3">
-                          <div className="h-5 w-5 rounded border border-[#4a5c78]" />
+                          <div className="h-5 w-5 rounded border border-[#dbe3f4]" />
                         </td>
                         <td className="px-3 py-3 font-medium">{session.name}</td>
-                        <td className="px-3 py-3 text-[#b8c5da]">-</td>
+                        <td className="px-3 py-3 text-[#555555]">-</td>
                         <td className="px-3 py-3">
                           <span className={`rounded-md border px-2 py-0.5 text-xs font-semibold ${statusClass(current)}`}>
                             {current}
@@ -426,7 +434,7 @@ export default function DashboardPage() {
                           <div className="flex flex-wrap gap-1">
                             <button
                               onClick={() => setSelectedSession(session.name)}
-                              className="rounded-full border border-[#36c] px-2 py-1 text-xs text-[#71b7ff]"
+                              className="rounded-full border border-[rgb(41,98,255)] px-2 py-1 text-xs text-[#9fc0ff]"
                             >
                               Select
                             </button>
@@ -445,7 +453,7 @@ export default function DashboardPage() {
                                   await loadSessionDetail(session.name);
                                 }, "Session stopped.");
                               }}
-                              className="rounded-full border border-[#e74c3c] px-2 py-1 text-xs text-[#ff8b84]"
+                              className="rounded-full border border-[#FF6C40] px-2 py-1 text-xs text-[#FF6C40]"
                             >
                               Stop
                             </button>
@@ -456,7 +464,7 @@ export default function DashboardPage() {
                   })}
                   {sessions.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="px-3 py-4 text-center text-[#b8c5da]">
+                      <td colSpan={5} className="px-3 py-4 text-center text-[#555555]">
                         No sessions available.
                       </td>
                     </tr>
@@ -466,27 +474,27 @@ export default function DashboardPage() {
             </div>
           </article>
 
-          <article className="rounded-xl border border-[#bdc3c7] bg-white p-4">
+          <article className="rounded-xl border border-[#dbe3f4] bg-white p-4">
             <h2 className="text-xl font-semibold">Lifecycle + QR</h2>
             <div className="mt-3 flex flex-wrap gap-2">
               <button
                 onClick={() => selectedSession && void withStatus(() => loadSessionDetail(selectedSession), "Detail refreshed.")}
                 disabled={!selectedSession || loading}
-                className="rounded-md border border-[#bdc3c7] px-3 py-1 text-[#b11a21] disabled:opacity-60"
+                className="rounded-md border border-[#dbe3f4] px-3 py-1 text-[rgb(41,98,255)] disabled:opacity-60"
               >
                 Refresh Detail
               </button>
               <button
                 onClick={() => void fetchQR()}
                 disabled={!selectedSession || loading}
-                className="rounded-md border border-[#bdc3c7] px-3 py-1 text-[#b11a21] disabled:opacity-60"
+                className="rounded-md border border-[#dbe3f4] px-3 py-1 text-[rgb(41,98,255)] disabled:opacity-60"
               >
                 Fetch QR
               </button>
               <button
                 onClick={() => void stopSession()}
                 disabled={!selectedSession || loading}
-                className="rounded-md border border-[#bdc3c7] px-3 py-1 text-[#e74c3c] disabled:opacity-60"
+                className="rounded-md border border-[#dbe3f4] px-3 py-1 text-[#FF6C40] disabled:opacity-60"
               >
                 Stop Session
               </button>
@@ -500,14 +508,14 @@ export default function DashboardPage() {
               </label>
             </div>
 
-            <div className="mt-3 rounded-md border border-[#bdc3c7] bg-[#f1f0ee] p-3 text-sm">
+            <div className="mt-3 rounded-md border border-[#dbe3f4] bg-white p-3 text-sm">
               <p><strong>Status:</strong> {selectedStatus}</p>
               <p><strong>Engine:</strong> {sessionDetail?.engine?.engine || "N/A"}</p>
               <p><strong>Debug:</strong> {String(Boolean(sessionDetail?.config?.debug))}</p>
             </div>
 
             <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
-              <div className="rounded-md border border-[#bdc3c7] bg-[#f1f0ee] p-3">
+              <div className="rounded-md border border-[#dbe3f4] bg-white p-3">
                 <p className="mb-1 text-sm font-semibold">Timestamps</p>
                 <div className="max-h-36 overflow-auto text-xs">
                   {sessionTimestamps.length === 0 ? "No timestamps." : null}
@@ -518,7 +526,7 @@ export default function DashboardPage() {
                   ))}
                 </div>
               </div>
-              <div className="rounded-md border border-[#bdc3c7] bg-[#f1f0ee] p-3">
+              <div className="rounded-md border border-[#dbe3f4] bg-white p-3">
                 <p className="mb-1 text-sm font-semibold">QR Payload</p>
                 <pre className="max-h-36 overflow-auto text-xs">{sessionQR || "No QR loaded."}</pre>
               </div>
@@ -527,33 +535,33 @@ export default function DashboardPage() {
         </section>
 
         <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-          <article className="rounded-xl border border-[#bdc3c7] bg-white p-4">
+          <article className="rounded-xl border border-[#dbe3f4] bg-white p-4">
             <h2 className="text-xl font-semibold">Send Message</h2>
             <form onSubmit={sendMessage} className="mt-3 space-y-2">
               <input
                 value={chatId}
                 onChange={(e) => setChatId(e.target.value)}
                 placeholder="Phone or chatId"
-                className="w-full rounded-md border border-[#bdc3c7] bg-[#f1f0ee] px-3 py-2 outline-none focus:border-[#b11a21]"
+                className="w-full rounded-md border border-[#dbe3f4] bg-white px-3 py-2 outline-none focus:border-[rgb(41,98,255)]"
               />
               <textarea
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 rows={4}
                 placeholder="Type message..."
-                className="w-full rounded-md border border-[#bdc3c7] bg-[#f1f0ee] px-3 py-2 outline-none focus:border-[#b11a21]"
+                className="w-full rounded-md border border-[#dbe3f4] bg-white px-3 py-2 outline-none focus:border-[rgb(41,98,255)]"
               />
               <button
                 type="submit"
                 disabled={loading || !selectedSession || !chatId.trim() || !text.trim()}
-                className="rounded-md bg-[#f39c12] px-4 py-2 font-semibold text-[#2c3e50] disabled:opacity-60"
+                className="rounded-md bg-[#2D99FF] px-4 py-2 font-semibold text-white disabled:opacity-60"
               >
                 Send
               </button>
             </form>
           </article>
 
-          <article className="rounded-xl border border-[#bdc3c7] bg-white p-4">
+          <article className="rounded-xl border border-[#dbe3f4] bg-white p-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold">Incoming Messages</h2>
               <label className="flex items-center gap-2 text-sm">
@@ -568,7 +576,7 @@ export default function DashboardPage() {
             <div className="mt-2 flex gap-2">
               <button
                 onClick={() => void loadMessages()}
-                className="rounded-md border border-[#bdc3c7] px-3 py-1 text-[#b11a21]"
+                className="rounded-md border border-[#dbe3f4] px-3 py-1 text-[rgb(41,98,255)]"
               >
                 Refresh
               </button>
@@ -577,7 +585,7 @@ export default function DashboardPage() {
                   await fetch("/api/webhooks/messages", { method: "DELETE" });
                   setMessages([]);
                 }, "Messages cleared.")}
-                className="rounded-md border border-[#bdc3c7] px-3 py-1 text-[#e74c3c]"
+                className="rounded-md border border-[#dbe3f4] px-3 py-1 text-[#FF6C40]"
               >
                 Clear
               </button>
@@ -585,7 +593,7 @@ export default function DashboardPage() {
             <div className="mt-3 max-h-60 space-y-2 overflow-auto">
               {messages.length === 0 ? <p className="text-sm">No messages yet.</p> : null}
               {messages.map((message) => (
-                <div key={message.payload.id} className="rounded-md border border-[#bdc3c7] bg-[#f1f0ee] p-2 text-sm">
+                <div key={message.payload.id} className="rounded-md border border-[#dbe3f4] bg-white p-2 text-sm">
                   <p>
                     <strong>{message.payload.from}</strong> - {new Date(message.payload.timestamp).toLocaleString()}
                   </p>
@@ -596,7 +604,7 @@ export default function DashboardPage() {
           </article>
         </section>
 
-        <section className="rounded-xl border border-[#bdc3c7] bg-white p-4">
+        <section className="rounded-xl border border-[#dbe3f4] bg-white p-4">
           <h2 className="text-xl font-semibold">Webhook Manager</h2>
           <p className="mt-1 text-sm">
             Manage multiple webhook URLs and event presets for <strong>{selectedSession || "no selected session"}</strong>.
@@ -607,12 +615,12 @@ export default function DashboardPage() {
               value={newWebhookUrl}
               onChange={(e) => setNewWebhookUrl(e.target.value)}
               placeholder="https://your-ngrok-url/api/webhooks/messages"
-              className="min-w-[260px] flex-1 rounded-md border border-[#bdc3c7] bg-[#f1f0ee] px-3 py-2 outline-none focus:border-[#b11a21]"
+              className="min-w-[260px] flex-1 rounded-md border border-[#dbe3f4] bg-white px-3 py-2 outline-none focus:border-[rgb(41,98,255)]"
             />
             <select
               value={webhookPreset}
               onChange={(e) => setWebhookPreset(e.target.value as keyof typeof EVENT_PRESETS)}
-              className="rounded-md border border-[#bdc3c7] bg-[#f1f0ee] px-3 py-2"
+              className="rounded-md border border-[#dbe3f4] bg-white px-3 py-2"
             >
               <option value="minimal">Minimal</option>
               <option value="messaging">Messaging</option>
@@ -621,30 +629,30 @@ export default function DashboardPage() {
             <button
               type="submit"
               disabled={!selectedSession || !newWebhookUrl.trim() || loading}
-              className="rounded-md bg-[#f39c12] px-4 py-2 font-semibold text-[#2c3e50] disabled:opacity-60"
+              className="rounded-md bg-[#2D99FF] px-4 py-2 font-semibold text-white disabled:opacity-60"
             >
               Add Webhook
             </button>
           </form>
 
-          <div className="mt-3 overflow-x-auto rounded-md border border-[#bdc3c7]">
+          <div className="mt-3 overflow-x-auto rounded-md border border-[#dbe3f4]">
             <table className="min-w-full text-left text-sm">
               <thead className="bg-[#b11a21]/10">
                 <tr>
-                  <th className="border-b border-[#bdc3c7] px-3 py-2">URL</th>
-                  <th className="border-b border-[#bdc3c7] px-3 py-2">Events</th>
-                  <th className="border-b border-[#bdc3c7] px-3 py-2">Retries</th>
-                  <th className="border-b border-[#bdc3c7] px-3 py-2">Actions</th>
+                  <th className="border-b border-[#dbe3f4] px-3 py-2">URL</th>
+                  <th className="border-b border-[#dbe3f4] px-3 py-2">Events</th>
+                  <th className="border-b border-[#dbe3f4] px-3 py-2">Retries</th>
+                  <th className="border-b border-[#dbe3f4] px-3 py-2">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {webhooks.map((webhook, index) => {
                   const duplicate = (webhookUrlCounts.get(webhook.url) || 0) > 1;
                   return (
-                    <tr key={`${webhook.url}-${index}`} className="border-b border-[#bdc3c7]">
+                    <tr key={`${webhook.url}-${index}`} className="border-b border-[#dbe3f4]">
                       <td className="px-3 py-2">
                         <div className="max-w-[420px] truncate">{webhook.url}</div>
-                        {duplicate ? <p className="text-xs text-[#e74c3c]">Duplicate URL detected</p> : null}
+                        {duplicate ? <p className="text-xs text-[#FF6C40]">Duplicate URL detected</p> : null}
                       </td>
                       <td className="px-3 py-2">{webhook.events.length} events</td>
                       <td className="px-3 py-2">
@@ -656,25 +664,25 @@ export default function DashboardPage() {
                         <div className="flex flex-wrap gap-1">
                           <button
                             onClick={() => void applyPreset(index, "minimal")}
-                            className="rounded border border-[#bdc3c7] px-2 py-1 text-xs text-[#b11a21]"
+                            className="rounded border border-[#dbe3f4] px-2 py-1 text-xs text-[rgb(41,98,255)]"
                           >
                             Minimal
                           </button>
                           <button
                             onClick={() => void applyPreset(index, "messaging")}
-                            className="rounded border border-[#bdc3c7] px-2 py-1 text-xs text-[#b11a21]"
+                            className="rounded border border-[#dbe3f4] px-2 py-1 text-xs text-[rgb(41,98,255)]"
                           >
                             Messaging
                           </button>
                           <button
                             onClick={() => void applyPreset(index, "debug")}
-                            className="rounded border border-[#bdc3c7] px-2 py-1 text-xs text-[#b11a21]"
+                            className="rounded border border-[#dbe3f4] px-2 py-1 text-xs text-[rgb(41,98,255)]"
                           >
                             Debug
                           </button>
                           <button
                             onClick={() => void removeWebhook(index)}
-                            className="rounded border border-[#bdc3c7] px-2 py-1 text-xs text-[#e74c3c]"
+                            className="rounded border border-[#dbe3f4] px-2 py-1 text-xs text-[#FF6C40]"
                           >
                             Remove
                           </button>
@@ -695,9 +703,9 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <section className="rounded-xl border border-[#bdc3c7] bg-white p-4">
+        <section className="rounded-xl border border-[#dbe3f4] bg-white p-4">
           <h2 className="text-xl font-semibold">Status</h2>
-          <p className={`mt-2 text-sm ${statusMessage.toLowerCase().includes("fail") || statusMessage.toLowerCase().includes("error") ? "text-[#e74c3c]" : ""}`}>
+          <p className={`mt-2 text-sm ${statusMessage.toLowerCase().includes("fail") || statusMessage.toLowerCase().includes("error") ? "text-[#FF6C40]" : ""}`}>
             {statusMessage || "Ready"}
           </p>
         </section>
