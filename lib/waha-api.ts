@@ -5,6 +5,8 @@ interface WAHAConfig {
 
 interface Session {
   name: string;
+  status?: string;
+  state?: string;
 }
 
 interface SendMessageRequest {

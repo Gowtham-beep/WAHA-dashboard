@@ -4,15 +4,38 @@ import { WebhookMessage } from "@/lib/waha-api";
 // In-memory storage for received messages but use a database in production
 let receivedMessages: WebhookMessage[] = [];
 
+function isWebhookMessage(payload: unknown): payload is WebhookMessage {
+  if (!payload || typeof payload !== "object") return false;
+  const message = payload as Record<string, unknown>;
+  if (typeof message.event !== "string") return false;
+  if (typeof message.session !== "string") return false;
+  if (!message.payload || typeof message.payload !== "object") return false;
+
+  const inner = message.payload as Record<string, unknown>;
+  return (
+    typeof inner.id === "string" &&
+    typeof inner.from === "string" &&
+    typeof inner.body === "string" &&
+    typeof inner.hasMedia === "boolean"
+  );
+}
+
 /**
  * POST /api/webhooks/messages
  * Receive incoming WhatsApp messages from WAHA
  */
 export async function POST(request: NextRequest) {
   try {
-    const payload = (await request.json()) as WebhookMessage;
- 
+    const payload = (await request.json()) as unknown;
+
     console.log("Webhook received:", payload);
+
+    if (!isWebhookMessage(payload)) {
+      return NextResponse.json({
+        success: true,
+        message: "Webhook endpoint is reachable. Payload ignored.",
+      });
+    }
 
     receivedMessages.push({
       ...payload,
