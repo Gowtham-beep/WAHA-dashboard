@@ -26,12 +26,12 @@ function getSessionStatus(session: Session): string {
 
 function statusPillClass(status: string): string {
   if (status.includes("work") || status.includes("ready") || status.includes("open")) {
-    return "border-[#1ABC9C]/40 bg-[#1ABC9C]/15 text-[#0f7661]";
+    return "border-[#b11a21]/40 bg-[#b11a21]/15 text-[#b11a21]";
   }
   if (status.includes("stop") || status.includes("close") || status.includes("fail")) {
-    return "border-[#FFC107]/40 bg-[#FFC107]/20 text-[#92400e]";
+    return "border-[#e74c3c]/40 bg-[#e74c3c]/15 text-[#e74c3c]";
   }
-  return "border-slate-300 bg-slate-100 text-slate-700";
+  return "border-[#bdc3c7] bg-[#f1f0ee] text-[#2c3e50]";
 }
 
 export default function DashboardPage() {
@@ -54,6 +54,7 @@ export default function DashboardPage() {
   const [selectedSessionDetails, setSelectedSessionDetails] = useState<Record<string, unknown> | null>(null);
   const [sessionQR, setSessionQR] = useState("");
   const [webhookUrl, setWebhookUrl] = useState("");
+  const wahaApiLabel = process.env.NEXT_PUBLIC_WAHA_API_URL || "WAHA API (server-configured)";
 
   const loadSessions = useCallback(async () => {
     setLoadingSessions(true);
@@ -192,12 +193,12 @@ export default function DashboardPage() {
     setMessages([]);
   }
 
-  async function loadSelectedSessionDetails() {
-    if (!selectedSession) return;
+  async function loadSelectedSessionDetails(sessionNameArg = selectedSession) {
+    if (!sessionNameArg) return;
     setToolsBusy(true);
     setToolsStatus("");
     try {
-      const response = await fetch(`/api/sessions/${encodeURIComponent(selectedSession)}`);
+      const response = await fetch(`/api/sessions/${encodeURIComponent(sessionNameArg)}`);
       const result = (await response.json()) as {
         success: boolean;
         data?: Record<string, unknown>;
@@ -215,12 +216,12 @@ export default function DashboardPage() {
     }
   }
 
-  async function stopSelectedSession() {
-    if (!selectedSession) return;
+  async function stopSelectedSession(sessionNameArg = selectedSession) {
+    if (!sessionNameArg) return;
     setToolsBusy(true);
     setToolsStatus("");
     try {
-      const response = await fetch(`/api/sessions/${encodeURIComponent(selectedSession)}/stop`, {
+      const response = await fetch(`/api/sessions/${encodeURIComponent(sessionNameArg)}/stop`, {
         method: "POST",
       });
       const result = (await response.json()) as { success: boolean; error?: string };
@@ -236,12 +237,12 @@ export default function DashboardPage() {
     }
   }
 
-  async function fetchSessionQR() {
-    if (!selectedSession) return;
+  async function fetchSessionQR(sessionNameArg = selectedSession) {
+    if (!sessionNameArg) return;
     setToolsBusy(true);
     setToolsStatus("");
     try {
-      const response = await fetch(`/api/sessions/${encodeURIComponent(selectedSession)}/qr`);
+      const response = await fetch(`/api/sessions/${encodeURIComponent(sessionNameArg)}/qr`);
       const result = (await response.json()) as {
         success: boolean;
         data?: { qr?: string };
@@ -259,12 +260,12 @@ export default function DashboardPage() {
     }
   }
 
-  async function setSelectedSessionWebhook() {
-    if (!selectedSession || !webhookUrl.trim()) return;
+  async function setSelectedSessionWebhook(sessionNameArg = selectedSession) {
+    if (!sessionNameArg || !webhookUrl.trim()) return;
     setToolsBusy(true);
     setToolsStatus("");
     try {
-      const response = await fetch(`/api/sessions/${encodeURIComponent(selectedSession)}/webhook`, {
+      const response = await fetch(`/api/sessions/${encodeURIComponent(sessionNameArg)}/webhook`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ webhookUrl: webhookUrl.trim() }),
@@ -282,98 +283,131 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] text-slate-800">
-      <header className="border-b-4 border-[#1ABC9C] bg-white">
-        <div className="mx-auto flex max-w-[1800px] items-center justify-between px-6 py-5">
+    <div className="min-h-screen bg-[#f1f0ee] text-[#2c3e50]">
+      <header className="border-b-4 border-[#f39c12] bg-[#b11a21] text-[#f1f0ee]">
+        <div className="mx-auto flex max-w-[1800px] items-center justify-between px-4 py-4 sm:px-6 sm:py-5">
           <div className="flex items-center gap-3">
-            <button className="text-2xl text-[#1ABC9C]">☰</button>
+            <button className="text-xl text-[#f39c12] sm:text-2xl">☰</button>
             <div className="flex items-center gap-2 text-3xl">🤖</div>
-            <h1 className="text-4xl font-semibold tracking-tight">Dashboard</h1>
+            <h1 className="text-2xl font-semibold tracking-tight sm:text-4xl">Dashboard</h1>
           </div>
-          <div className="flex items-center gap-5 text-2xl text-[#1ABC9C]">
+          <div className="flex items-center gap-3 text-xl text-[#f1f0ee] sm:gap-5 sm:text-2xl">
             <button>◌</button>
             <button>◉</button>
-            <button className="text-[#FFC107]">↻</button>
+            <button className="text-[#f39c12]">↻</button>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-[1800px] px-6 py-6">
+      <main className="mx-auto max-w-[1800px] px-4 py-4 sm:px-6 sm:py-6">
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <article className="rounded-2xl border border-[#1ABC9C]/30 bg-white p-6 shadow-sm">
-            <p className="text-lg font-semibold">Sessions</p>
-            <p className="mt-2 text-4xl font-bold">{sessions.length}</p>
-            <p className="mt-2 text-lg text-[#1ABC9C]">{sessionsWorking} working</p>
+          <article className="rounded-2xl border border-[#bdc3c7] bg-white p-6 shadow-sm">
+            <p className="text-base font-semibold sm:text-lg">Sessions</p>
+            <p className="mt-2 text-3xl font-bold sm:text-4xl">{sessions.length}</p>
+            <p className="mt-2 text-base text-[#b11a21] sm:text-lg">{sessionsWorking} working</p>
           </article>
-          <article className="rounded-2xl border border-[#1ABC9C]/30 bg-white p-6 shadow-sm">
-            <p className="text-lg font-semibold">Workers</p>
-            <p className="mt-2 text-4xl font-bold">{sessions.length}</p>
-            <p className="mt-2 text-lg">
-              <span className="text-[#b45309]">{Math.max(0, sessions.length - sessionsWorking)} not connected</span>
-              <span className="text-slate-500"> / </span>
-              <span className="text-[#1ABC9C]">{sessionsWorking} connected</span>
+          <article className="rounded-2xl border border-[#bdc3c7] bg-white p-6 shadow-sm">
+            <p className="text-base font-semibold sm:text-lg">Workers</p>
+            <p className="mt-2 text-3xl font-bold sm:text-4xl">{sessions.length}</p>
+            <p className="mt-2 text-base sm:text-lg">
+              <span className="text-[#e74c3c]">{Math.max(0, sessions.length - sessionsWorking)} not connected</span>
+              <span className="text-[#2c3e50]"> / </span>
+              <span className="text-[#b11a21]">{sessionsWorking} connected</span>
             </p>
           </article>
-          <article className="rounded-2xl border border-[#FFC107]/40 bg-white p-6 shadow-sm">
-            <p className="text-lg font-semibold">Updates</p>
-            <p className="mt-2 text-3xl font-semibold text-[#1ABC9C]">All workers up to date!</p>
-            <p className="mt-2 text-lg text-[#b45309]">Changelog</p>
+          <article className="rounded-2xl border border-[#f39c12]/40 bg-white p-6 shadow-sm">
+            <p className="text-base font-semibold sm:text-lg">Updates</p>
+            <p className="mt-2 text-2xl font-semibold text-[#b11a21] sm:text-3xl">All workers up to date!</p>
+            <p className="mt-2 text-base text-[#e74c3c] sm:text-lg">Changelog</p>
           </article>
         </section>
 
-        <section className="mt-4 rounded-2xl border border-[#1ABC9C]/30 bg-white p-6 shadow-sm">
+        <section className="mt-4 rounded-2xl border border-[#bdc3c7] bg-white p-6 shadow-sm">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-3xl font-semibold">Workers</h2>
+            <h2 className="text-2xl font-semibold sm:text-3xl">Workers</h2>
             <div className="flex items-center gap-3">
-              <button className="rounded-lg bg-[#FFC107] px-5 py-2 text-lg font-semibold text-slate-900">
-                Connect
+              <button
+                onClick={() => void loadSessions()}
+                className="rounded-lg bg-[#f39c12] px-4 py-2 text-base font-semibold text-[#2c3e50] sm:px-5 sm:text-lg"
+              >
+                Refresh
               </button>
               <input
                 value={workerFilter}
                 onChange={(e) => setWorkerFilter(e.target.value)}
                 placeholder="Keyword Search"
-                className="rounded-lg border border-[#1ABC9C]/40 bg-[#F8F9FA] px-3 py-2 text-lg outline-none focus:border-[#1ABC9C]"
+                className="rounded-lg border border-[#bdc3c7] bg-[#f1f0ee] px-3 py-2 text-base outline-none focus:border-[#b11a21] sm:text-lg"
               />
               <button
                 onClick={() => void loadSessions()}
-                className="rounded-lg border border-[#1ABC9C]/40 px-3 py-2 text-lg text-[#1ABC9C]"
+                className="rounded-lg border border-[#bdc3c7] px-3 py-2 text-base text-[#b11a21] sm:text-lg"
               >
                 ↻
               </button>
             </div>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-[#1ABC9C]/30">
-            <table className="min-w-full text-left text-lg">
-              <thead className="bg-[#1ABC9C]/10 text-slate-800">
+          <div className="overflow-x-auto rounded-xl border border-[#bdc3c7]">
+            <table className="min-w-full text-left text-sm sm:text-base lg:text-lg">
+              <thead className="bg-[#b11a21]/10 text-[#2c3e50]">
                 <tr>
-                  <th className="border-b border-[#1ABC9C]/20 px-4 py-3">Name</th>
-                  <th className="border-b border-[#1ABC9C]/20 px-4 py-3">API</th>
-                  <th className="border-b border-[#1ABC9C]/20 px-4 py-3">Info</th>
-                  <th className="border-b border-[#1ABC9C]/20 px-4 py-3">Sessions</th>
-                  <th className="border-b border-[#1ABC9C]/20 px-4 py-3">Actions</th>
+                  <th className="border-b border-[#bdc3c7] px-4 py-3">Name</th>
+                  <th className="border-b border-[#bdc3c7] px-4 py-3">API</th>
+                  <th className="border-b border-[#bdc3c7] px-4 py-3">Info</th>
+                  <th className="border-b border-[#bdc3c7] px-4 py-3">Sessions</th>
+                  <th className="border-b border-[#bdc3c7] px-4 py-3">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredWorkers.map((session) => {
                   const status = getSessionStatus(session);
                   return (
-                    <tr key={`worker-${session.name}`} className="border-b border-[#1ABC9C]/15">
-                      <td className="px-4 py-3">WAHA</td>
-                      <td className="px-4 py-3 text-[#0f7661]">http://localhost:3000</td>
-                      <td className="px-4 py-3 text-slate-600">{session.name}</td>
+                    <tr key={`worker-${session.name}`} className="border-b border-[#bdc3c7]">
+                      <td className="px-4 py-3">{session.name}</td>
+                      <td className="px-4 py-3 text-[#2c3e50]">{wahaApiLabel}</td>
+                      <td className="px-4 py-3 text-[#2c3e50]">{session.name}</td>
                       <td className="px-4 py-3">
                         <span className={`rounded-md border px-2 py-1 text-sm font-semibold ${statusPillClass(status)}`}>
                           {status.toUpperCase()}
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-2 text-sm">
-                          <button className="rounded-full border border-[#1ABC9C]/50 px-2 py-1 text-[#1ABC9C]">◉</button>
-                          <button className="rounded-full border border-[#FFC107]/50 px-2 py-1 text-[#b45309]">◔</button>
-                          <button className="rounded-full border border-slate-300 px-2 py-1 text-slate-500">i</button>
-                          <button className="rounded-full border border-[#1ABC9C]/50 px-2 py-1 text-[#0f7661]">✎</button>
-                          <button className="rounded-full border border-[#FFC107]/50 px-2 py-1 text-[#92400e]">✕</button>
+                        <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
+                          <button
+                            onClick={() => {
+                              setSelectedSession(session.name);
+                            }}
+                            className="rounded-full border border-[#b11a21]/50 px-2 py-1 text-[#b11a21]"
+                          >
+                            Select
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelectedSession(session.name);
+                              void loadSelectedSessionDetails(session.name);
+                            }}
+                            className="rounded-full border border-[#b11a21]/50 px-2 py-1 text-[#2c3e50]"
+                          >
+                            Detail
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelectedSession(session.name);
+                              void fetchSessionQR(session.name);
+                            }}
+                            className="rounded-full border border-[#f39c12]/50 px-2 py-1 text-[#e74c3c]"
+                          >
+                            QR
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelectedSession(session.name);
+                              void stopSelectedSession(session.name);
+                            }}
+                            className="rounded-full border border-[#f39c12]/50 px-2 py-1 text-[#e74c3c]"
+                          >
+                            Stop
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -381,7 +415,7 @@ export default function DashboardPage() {
                 })}
                 {filteredWorkers.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-6 text-center text-slate-500">
+                    <td colSpan={5} className="px-4 py-6 text-center text-[#2c3e50]">
                       No workers found.
                     </td>
                   </tr>
@@ -391,11 +425,11 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <section className="mt-4 rounded-2xl border border-[#1ABC9C]/30 bg-white p-6 shadow-sm">
+        <section className="mt-4 rounded-2xl border border-[#bdc3c7] bg-white p-6 shadow-sm">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-3xl font-semibold">Sessions</h2>
+            <h2 className="text-2xl font-semibold sm:text-3xl">Sessions</h2>
             <div className="flex items-center gap-3">
-              <label className="flex items-center gap-2 text-lg text-slate-600">
+              <label className="flex items-center gap-2 text-sm text-[#2c3e50] sm:text-lg">
                 Hide Duplicates
                 <input
                   type="checkbox"
@@ -408,11 +442,11 @@ export default function DashboardPage() {
                 value={sessionFilter}
                 onChange={(e) => setSessionFilter(e.target.value)}
                 placeholder="Search by name"
-                className="rounded-lg border border-[#1ABC9C]/40 bg-[#F8F9FA] px-3 py-2 text-lg outline-none focus:border-[#1ABC9C]"
+                className="rounded-lg border border-[#bdc3c7] bg-[#f1f0ee] px-3 py-2 text-base outline-none focus:border-[#b11a21] sm:text-lg"
               />
               <button
                 onClick={() => void loadSessions()}
-                className="rounded-lg border border-[#1ABC9C]/40 px-3 py-2 text-lg text-[#1ABC9C]"
+                className="rounded-lg border border-[#bdc3c7] px-3 py-2 text-base text-[#b11a21] sm:text-lg"
               >
                 ↻
               </button>
@@ -424,26 +458,26 @@ export default function DashboardPage() {
               value={sessionName}
               onChange={(e) => setSessionName(e.target.value)}
               placeholder="New session name"
-              className="rounded-lg border border-[#1ABC9C]/40 bg-[#F8F9FA] px-3 py-2 text-lg outline-none focus:border-[#1ABC9C]"
+              className="rounded-lg border border-[#bdc3c7] bg-[#f1f0ee] px-3 py-2 text-base outline-none focus:border-[#b11a21] sm:text-lg"
             />
             <button
               type="submit"
               disabled={loadingSessions || !sessionName.trim()}
-              className="rounded-lg bg-[#FFC107] px-5 py-2 text-lg font-semibold text-slate-900 disabled:opacity-60"
+              className="rounded-lg bg-[#f39c12] px-5 py-2 text-base font-semibold text-[#2c3e50] disabled:opacity-60 sm:text-lg"
             >
               Start New
             </button>
           </form>
 
-          {pageError ? <p className="mb-3 text-[#b45309]">{pageError}</p> : null}
+          {pageError ? <p className="mb-3 text-[#e74c3c]">{pageError}</p> : null}
 
-          <div className="overflow-x-auto rounded-xl border border-[#1ABC9C]/30">
-            <table className="min-w-full text-left text-lg">
-              <thead className="bg-[#1ABC9C]/10 text-slate-800">
+          <div className="overflow-x-auto rounded-xl border border-[#bdc3c7]">
+            <table className="min-w-full text-left text-sm sm:text-base lg:text-lg">
+              <thead className="bg-[#b11a21]/10 text-[#2c3e50]">
                 <tr>
-                  <th className="border-b border-[#1ABC9C]/20 px-4 py-3">Name</th>
-                  <th className="border-b border-[#1ABC9C]/20 px-4 py-3">Status</th>
-                  <th className="border-b border-[#1ABC9C]/20 px-4 py-3">Select</th>
+                  <th className="border-b border-[#bdc3c7] px-4 py-3">Name</th>
+                  <th className="border-b border-[#bdc3c7] px-4 py-3">Status</th>
+                  <th className="border-b border-[#bdc3c7] px-4 py-3">Select</th>
                 </tr>
               </thead>
               <tbody>
@@ -451,7 +485,7 @@ export default function DashboardPage() {
                   const status = getSessionStatus(session);
                   const selected = selectedSession === session.name;
                   return (
-                    <tr key={`session-${session.name}`} className="border-b border-[#1ABC9C]/15">
+                    <tr key={`session-${session.name}`} className="border-b border-[#bdc3c7]">
                       <td className="px-4 py-3">{session.name}</td>
                       <td className="px-4 py-3">
                         <span className={`rounded-md border px-2 py-1 text-sm font-semibold ${statusPillClass(status)}`}>
@@ -462,7 +496,7 @@ export default function DashboardPage() {
                         <button
                           onClick={() => setSelectedSession(session.name)}
                           className={`rounded-lg px-3 py-1 text-sm font-semibold ${
-                            selected ? "bg-[#1ABC9C] text-white" : "bg-slate-100 text-slate-700"
+                            selected ? "bg-[#b11a21] text-white" : "bg-[#f1f0ee] text-[#2c3e50]"
                           }`}
                         >
                           {selected ? "Selected" : "Select"}
@@ -476,39 +510,39 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <section className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <article className="rounded-2xl border border-[#1ABC9C]/30 bg-white p-6 shadow-sm">
+        <section className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2">
+          <article className="rounded-2xl border border-[#bdc3c7] bg-white p-6 shadow-sm">
             <h3 className="text-2xl font-semibold">Send Message</h3>
-            <p className="mt-1 text-slate-600">Selected session: {selectedSession || "Not selected"}</p>
+            <p className="mt-1 text-[#2c3e50]">Selected session: {selectedSession || "Not selected"}</p>
             <form onSubmit={sendMessage} className="mt-4 space-y-3">
               <input
                 value={chatId}
                 onChange={(e) => setChatId(e.target.value)}
                 placeholder="Phone or chatId"
-                className="w-full rounded-lg border border-[#1ABC9C]/40 bg-[#F8F9FA] px-3 py-2 text-lg outline-none focus:border-[#1ABC9C]"
+                className="w-full rounded-lg border border-[#bdc3c7] bg-[#f1f0ee] px-3 py-2 text-lg outline-none focus:border-[#b11a21]"
               />
               <textarea
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 placeholder="Type message..."
                 rows={4}
-                className="w-full rounded-lg border border-[#1ABC9C]/40 bg-[#F8F9FA] px-3 py-2 text-lg outline-none focus:border-[#1ABC9C]"
+                className="w-full rounded-lg border border-[#bdc3c7] bg-[#f1f0ee] px-3 py-2 text-lg outline-none focus:border-[#b11a21]"
               />
               <button
                 type="submit"
                 disabled={sending || !selectedSession || !chatId.trim() || !text.trim()}
-                className="rounded-lg bg-[#FFC107] px-5 py-2 text-lg font-semibold text-slate-900 disabled:opacity-60"
+                className="rounded-lg bg-[#f39c12] px-5 py-2 text-lg font-semibold text-[#2c3e50] disabled:opacity-60"
               >
                 {sending ? "Sending..." : "Send Message"}
               </button>
-              {sendStatus ? <p className="text-slate-700">{sendStatus}</p> : null}
+              {sendStatus ? <p className="text-[#2c3e50]">{sendStatus}</p> : null}
             </form>
           </article>
 
-          <article className="rounded-2xl border border-[#1ABC9C]/30 bg-white p-6 shadow-sm">
+          <article className="rounded-2xl border border-[#bdc3c7] bg-white p-6 shadow-sm">
             <div className="flex items-center justify-between">
               <h3 className="text-2xl font-semibold">Received Messages</h3>
-              <label className="flex items-center gap-2 text-lg text-slate-600">
+              <label className="flex items-center gap-2 text-lg text-[#2c3e50]">
                 Auto-refresh
                 <input
                   type="checkbox"
@@ -521,35 +555,35 @@ export default function DashboardPage() {
             <div className="mt-3 flex gap-2">
               <button
                 onClick={() => void loadMessages()}
-                className="rounded-lg border border-[#1ABC9C]/40 px-3 py-1 text-[#1ABC9C]"
+                className="rounded-lg border border-[#bdc3c7] px-3 py-1 text-[#b11a21]"
               >
                 Refresh
               </button>
               <button
                 onClick={() => void clearMessages()}
-                className="rounded-lg border border-[#FFC107]/60 px-3 py-1 text-[#92400e]"
+                className="rounded-lg border border-[#f39c12]/60 px-3 py-1 text-[#e74c3c]"
               >
                 Clear
               </button>
             </div>
             <div className="mt-4 max-h-[320px] space-y-2 overflow-y-auto">
-              {messages.length === 0 ? <p className="text-slate-500">No messages yet.</p> : null}
+              {messages.length === 0 ? <p className="text-[#2c3e50]">No messages yet.</p> : null}
               {messages.map((message) => (
-                <div key={message.payload.id} className="rounded-lg border border-[#1ABC9C]/25 bg-[#F8F9FA] p-3">
-                  <p className="text-sm text-slate-600">
-                    <span className="font-semibold text-slate-800">{message.payload.from}</span> -{" "}
+                <div key={message.payload.id} className="rounded-lg border border-[#b11a21]/25 bg-[#f1f0ee] p-3">
+                  <p className="text-sm text-[#2c3e50]">
+                    <span className="font-semibold text-[#2c3e50]">{message.payload.from}</span> -{" "}
                     {new Date(message.payload.timestamp).toLocaleString()}
                   </p>
-                  <p className="mt-1 text-slate-800">{message.payload.body || "(empty message)"}</p>
+                  <p className="mt-1 text-[#2c3e50]">{message.payload.body || "(empty message)"}</p>
                 </div>
               ))}
             </div>
           </article>
         </section>
 
-        <section className="mt-4 rounded-2xl border border-[#1ABC9C]/30 bg-white p-6 shadow-sm">
+        <section className="mt-4 rounded-2xl border border-[#bdc3c7] bg-white p-6 shadow-sm">
           <h3 className="text-2xl font-semibold">Session Tools</h3>
-          <p className="mt-1 text-slate-600">
+          <p className="mt-1 text-[#2c3e50]">
             Useful controls for daily ops on <span className="font-semibold">{selectedSession || "no session selected"}</span>.
           </p>
 
@@ -557,21 +591,21 @@ export default function DashboardPage() {
             <button
               onClick={() => void loadSelectedSessionDetails()}
               disabled={toolsBusy || !selectedSession}
-              className="rounded-lg border border-[#1ABC9C]/40 px-3 py-2 text-[#1ABC9C] disabled:opacity-60"
+              className="rounded-lg border border-[#bdc3c7] px-3 py-2 text-[#b11a21] disabled:opacity-60"
             >
               Refresh Session Detail
             </button>
             <button
               onClick={() => void fetchSessionQR()}
               disabled={toolsBusy || !selectedSession}
-              className="rounded-lg border border-[#1ABC9C]/40 px-3 py-2 text-[#1ABC9C] disabled:opacity-60"
+              className="rounded-lg border border-[#bdc3c7] px-3 py-2 text-[#b11a21] disabled:opacity-60"
             >
               Get QR
             </button>
             <button
               onClick={() => void stopSelectedSession()}
               disabled={toolsBusy || !selectedSession}
-              className="rounded-lg border border-[#FFC107]/60 px-3 py-2 text-[#92400e] disabled:opacity-60"
+              className="rounded-lg border border-[#f39c12]/60 px-3 py-2 text-[#e74c3c] disabled:opacity-60"
             >
               Stop Session
             </button>
@@ -582,29 +616,29 @@ export default function DashboardPage() {
               value={webhookUrl}
               onChange={(e) => setWebhookUrl(e.target.value)}
               placeholder="Webhook URL"
-              className="min-w-[280px] flex-1 rounded-lg border border-[#1ABC9C]/40 bg-[#F8F9FA] px-3 py-2 outline-none focus:border-[#1ABC9C]"
+              className="min-w-[280px] flex-1 rounded-lg border border-[#bdc3c7] bg-[#f1f0ee] px-3 py-2 outline-none focus:border-[#b11a21]"
             />
             <button
               onClick={() => void setSelectedSessionWebhook()}
               disabled={toolsBusy || !selectedSession || !webhookUrl.trim()}
-              className="rounded-lg bg-[#FFC107] px-4 py-2 font-semibold text-slate-900 disabled:opacity-60"
+              className="rounded-lg bg-[#f39c12] px-4 py-2 font-semibold text-[#2c3e50] disabled:opacity-60"
             >
               Set Webhook
             </button>
           </div>
 
-          {toolsStatus ? <p className="mt-3 text-slate-700">{toolsStatus}</p> : null}
+          {toolsStatus ? <p className="mt-3 text-[#2c3e50]">{toolsStatus}</p> : null}
 
           <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-2">
-            <div className="rounded-lg border border-[#1ABC9C]/20 bg-[#F8F9FA] p-3">
-              <p className="mb-2 font-semibold text-slate-700">Session Detail</p>
-              <pre className="max-h-56 overflow-auto text-xs text-slate-700">
+            <div className="rounded-lg border border-[#bdc3c7] bg-[#f1f0ee] p-3">
+              <p className="mb-2 font-semibold text-[#2c3e50]">Session Detail</p>
+              <pre className="max-h-56 overflow-auto text-xs text-[#2c3e50]">
                 {selectedSessionDetails ? JSON.stringify(selectedSessionDetails, null, 2) : "No details loaded."}
               </pre>
             </div>
-            <div className="rounded-lg border border-[#1ABC9C]/20 bg-[#F8F9FA] p-3">
-              <p className="mb-2 font-semibold text-slate-700">Session QR</p>
-              <pre className="max-h-56 overflow-auto text-xs text-slate-700">
+            <div className="rounded-lg border border-[#bdc3c7] bg-[#f1f0ee] p-3">
+              <p className="mb-2 font-semibold text-[#2c3e50]">Session QR</p>
+              <pre className="max-h-56 overflow-auto text-xs text-[#2c3e50]">
                 {sessionQR || "No QR loaded."}
               </pre>
             </div>
