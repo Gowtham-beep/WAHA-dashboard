@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import Image from "next/image";
 
 type Session = {
   name: string;
@@ -67,6 +68,10 @@ function isWorking(status: string): boolean {
   return status.includes("WORK");
 }
 
+function needsQrRefresh(status: string): boolean {
+  return !isWorking(status) && (status.includes("START") || status.includes("SCAN") || status.includes("QR"));
+}
+
 function statusClass(status: string): string {
   if (status.includes("WORK")) {
     return "border-[rgb(41,98,255)] bg-[rgba(41,98,255,0.18)] text-[rgb(41,98,255)]";
@@ -81,7 +86,6 @@ export default function DashboardPage() {
   const [selectedSession, setSelectedSession] = useState("");
   const [sessionDetail, setSessionDetail] = useState<SessionDetail | null>(null);
   const [sessionQR, setSessionQR] = useState("");
-  const [qrStatusKey, setQrStatusKey] = useState("");
 
   const [messages, setMessages] = useState<WebhookMessage[]>([]);
   const [autoMessageRefresh, setAutoMessageRefresh] = useState(true);
@@ -203,14 +207,22 @@ export default function DashboardPage() {
     }, "Message sent.");
   }
 
-  const fetchQR = useCallback(async (sessionNameArg = selectedSession) => {
+  const fetchQR = useCallback(async (sessionNameArg = selectedSession, silent = false) => {
     if (!sessionNameArg) return;
-    await withStatus(async () => {
+
+    const run = async () => {
       const response = await fetch(`/api/sessions/${encodeURIComponent(sessionNameArg)}/qr`);
       const result = (await response.json()) as { success: boolean; data?: { qr?: string }; error?: string };
       if (!response.ok || !result.success) throw new Error(result.error || "Failed to fetch QR");
       setSessionQR(result.data?.qr || "");
-    }, "QR fetched.");
+    };
+
+    if (silent) {
+      await run();
+      return;
+    }
+
+    await withStatus(run, "QR fetched.");
   }, [selectedSession, withStatus]);
 
   async function saveWebhooks(nextWebhooks: SessionWebhook[]) {
@@ -293,13 +305,12 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!selectedSession || !sessionDetail) return;
     const status = statusText(sessionDetail);
-    const statusKey = `${selectedSession}:${status}`;
-    if (statusKey === qrStatusKey) return;
-    if (!isWorking(status) && (status.includes("START") || status.includes("SCAN") || status.includes("QR"))) {
-      setQrStatusKey(statusKey);
-      void fetchQR(selectedSession);
-    }
-  }, [fetchQR, qrStatusKey, selectedSession, sessionDetail]);
+    if (!needsQrRefresh(status)) return;
+
+    void fetchQR(selectedSession, true);
+    const timer = setInterval(() => void fetchQR(selectedSession, true), 12000);
+    return () => clearInterval(timer);
+  }, [fetchQR, selectedSession, sessionDetail]);
 
   const sessionTimestamps = Object.entries(sessionDetail?.timestamps || {});
 
@@ -528,7 +539,22 @@ export default function DashboardPage() {
               </div>
               <div className="rounded-md border border-[#dbe3f4] bg-white p-3">
                 <p className="mb-1 text-sm font-semibold">QR Payload</p>
-                <pre className="max-h-36 overflow-auto text-xs">{sessionQR || "No QR loaded."}</pre>
+                {sessionQR ? (
+                  sessionQR.startsWith("data:image/") ? (
+                    <Image
+                      src={sessionQR}
+                      alt="WhatsApp session QR"
+                      width={288}
+                      height={288}
+                      unoptimized
+                      className="mx-auto h-auto max-h-72 w-full max-w-72 rounded-md border border-[#dbe3f4] bg-white object-contain p-2"
+                    />
+                  ) : (
+                    <pre className="max-h-36 overflow-auto text-xs">{sessionQR}</pre>
+                  )
+                ) : (
+                  <p className="text-xs text-[#666]">No QR loaded.</p>
+                )}
               </div>
             </div>
           </article>

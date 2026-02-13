@@ -115,9 +115,36 @@ class WAHAClient {
   }
 
   async getSessionQR(sessionName: string): Promise<{ qr: string }> {
-    return this.request<{ qr: string }>(`/api/sessions/${sessionName}/auth/qr`, {
-      method: "GET",
-    });
+    try {
+      const response = await fetch(`${this.baseUrl}/api/${sessionName}/auth/qr`, {
+        method: "GET",
+        headers: this.buildHeaders({
+          Accept: "application/json, image/png",
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`WAHA API Error: ${response.status} - ${errorText}`);
+      }
+
+      const contentType = response.headers.get("content-type")?.toLowerCase() || "";
+
+      if (contentType.includes("application/json")) {
+        const data = (await response.json()) as { qr?: string };
+        return { qr: data.qr || "" };
+      }
+
+      if (contentType.includes("image/png")) {
+        const buffer = Buffer.from(await response.arrayBuffer());
+        return { qr: `data:image/png;base64,${buffer.toString("base64")}` };
+      }
+
+      return { qr: await response.text() };
+    } catch (error) {
+      console.error("WAHA API Request Failed:", error);
+      throw error;
+    }
   }
 
   async setWebhook(sessionName: string, webhookUrl: string): Promise<void> {
