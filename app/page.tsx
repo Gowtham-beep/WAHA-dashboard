@@ -81,6 +81,21 @@ function statusClass(status: string): string {
   return "border-[#dbe3f4] bg-white text-black";
 }
 
+const panelClass =
+  "rounded-xl border border-[#dbe3f4] bg-white p-4 shadow-[0_8px_28px_rgba(15,43,90,0.06)]";
+const btnBase =
+  "rounded-md border px-3 py-1.5 text-sm font-medium transition-all duration-150 ease-out hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(30,72,140,0.16)] active:translate-y-0 active:shadow-sm disabled:translate-y-0 disabled:shadow-none disabled:opacity-60 disabled:cursor-not-allowed";
+const btnPrimary =
+  `${btnBase} border-transparent bg-[#2D99FF] text-white hover:bg-[#237fdd]`;
+const btnNeutral =
+  `${btnBase} border-[#dbe3f4] bg-white text-[rgb(41,98,255)] hover:border-[#b7caef] hover:bg-[#f3f7ff]`;
+const btnDanger =
+  `${btnBase} border-[#ffd2c3] bg-white text-[#FF6C40] hover:border-[#FF6C40] hover:bg-[#fff4ef]`;
+const btnPillNeutral =
+  "rounded-full border border-[rgb(41,98,255)] px-2 py-1 text-xs text-[rgb(41,98,255)] transition-all duration-150 ease-out hover:-translate-y-0.5 hover:bg-[rgba(41,98,255,0.1)]";
+const btnPillDanger =
+  "rounded-full border border-[#FF6C40] px-2 py-1 text-xs text-[#FF6C40] transition-all duration-150 ease-out hover:-translate-y-0.5 hover:bg-[#fff4ef]";
+
 export default function DashboardPage() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [selectedSession, setSelectedSession] = useState("");
@@ -331,17 +346,17 @@ export default function DashboardPage() {
 
       <main className="mx-auto max-w-[1800px] space-y-4 px-4 py-4 sm:px-6">
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <article className="rounded-xl border border-[#dbe3f4] bg-white p-4">
+          <article className={panelClass}>
             <p className="text-sm text-black">Sessions</p>
             <p className="mt-1 text-3xl font-bold">{sessions.length}</p>
           </article>
-          <article className="rounded-xl border border-[#dbe3f4] bg-white p-4">
+          <article className={panelClass}>
             <p className="text-sm text-black">Current Status</p>
             <p className={`mt-2 inline-block rounded-md border px-2 py-1 text-sm font-semibold ${statusClass(selectedStatus)}`}>
               {selectedStatus}
             </p>
           </article>
-          <article className="rounded-xl border border-[#dbe3f4] bg-white p-4">
+          <article className={panelClass}>
             <p className="text-sm text-black">Webhook Health</p>
             <p className="mt-1 text-lg font-semibold">
               {webhooks.length} configured, {duplicateWebhookCount} duplicate URL(s)
@@ -350,12 +365,12 @@ export default function DashboardPage() {
         </section>
 
         <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-          <article className="rounded-xl border border-[#dbe3f4] bg-[#ffffff] p-4 text-[#000000]">
+          <article className={`${panelClass} text-[#000000]`}>
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-xl font-semibold">Sessions</h2>
               <button
                 onClick={() => void withStatus(loadSessions, "Sessions refreshed.")}
-                className="rounded-md border border-[#dbe3f4] px-2 py-1 text-sm text-[#111111]"
+                className={`${btnNeutral} px-2 py-1`}
               >
                 ↻
               </button>
@@ -366,7 +381,7 @@ export default function DashboardPage() {
                 <button
                   type="submit"
                   disabled={loading || !sessionName.trim()}
-                  className="rounded-md bg-[#2D99FF] px-4 py-2 font-semibold text-white hover:bg-[#826AF9] disabled:opacity-60"
+                  className={`${btnPrimary} px-4 py-2`}
                 >
                   ▷ Start New
                 </button>
@@ -382,7 +397,7 @@ export default function DashboardPage() {
                   placeholder="Search by Name, Phone"
                   className="rounded-md border border-[#dbe3f4] bg-[#ffffff] px-3 py-2 text-sm text-[#111111] outline-none"
                 />
-                <button className="rounded-md border border-[#dbe3f4] bg-[#ffffff] px-3 py-2 text-sm text-[#111111]">
+                <button className={`${btnNeutral} px-3 py-2 text-[#111111]`}>
                   Columns ▾
                 </button>
               </div>
@@ -445,7 +460,7 @@ export default function DashboardPage() {
                           <div className="flex flex-wrap gap-1">
                             <button
                               onClick={() => setSelectedSession(session.name)}
-                              className="rounded-full border border-[rgb(41,98,255)] px-2 py-1 text-xs text-[#9fc0ff]"
+                              className={btnPillNeutral}
                             >
                               Select
                             </button>
@@ -464,7 +479,7 @@ export default function DashboardPage() {
                                   await loadSessionDetail(session.name);
                                 }, "Session stopped.");
                               }}
-                              className="rounded-full border border-[#FF6C40] px-2 py-1 text-xs text-[#FF6C40]"
+                              className={btnPillDanger}
                             >
                               Stop
                             </button>
@@ -485,27 +500,27 @@ export default function DashboardPage() {
             </div>
           </article>
 
-          <article className="rounded-xl border border-[#dbe3f4] bg-white p-4">
+          <article className={panelClass}>
             <h2 className="text-xl font-semibold">Lifecycle + QR</h2>
             <div className="mt-3 flex flex-wrap gap-2">
               <button
                 onClick={() => selectedSession && void withStatus(() => loadSessionDetail(selectedSession), "Detail refreshed.")}
                 disabled={!selectedSession || loading}
-                className="rounded-md border border-[#dbe3f4] px-3 py-1 text-[rgb(41,98,255)] disabled:opacity-60"
+                className={btnNeutral}
               >
                 Refresh Detail
               </button>
               <button
                 onClick={() => void fetchQR()}
                 disabled={!selectedSession || loading}
-                className="rounded-md border border-[#dbe3f4] px-3 py-1 text-[rgb(41,98,255)] disabled:opacity-60"
+                className={btnNeutral}
               >
                 Fetch QR
               </button>
               <button
                 onClick={() => void stopSession()}
                 disabled={!selectedSession || loading}
-                className="rounded-md border border-[#dbe3f4] px-3 py-1 text-[#FF6C40] disabled:opacity-60"
+                className={btnDanger}
               >
                 Stop Session
               </button>
@@ -561,7 +576,7 @@ export default function DashboardPage() {
         </section>
 
         <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-          <article className="rounded-xl border border-[#dbe3f4] bg-white p-4">
+          <article className={panelClass}>
             <h2 className="text-xl font-semibold">Send Message</h2>
             <form onSubmit={sendMessage} className="mt-3 space-y-2">
               <input
@@ -580,14 +595,14 @@ export default function DashboardPage() {
               <button
                 type="submit"
                 disabled={loading || !selectedSession || !chatId.trim() || !text.trim()}
-                className="rounded-md bg-[#2D99FF] px-4 py-2 font-semibold text-white disabled:opacity-60"
+                className={`${btnPrimary} px-4 py-2`}
               >
                 Send
               </button>
             </form>
           </article>
 
-          <article className="rounded-xl border border-[#dbe3f4] bg-white p-4">
+          <article className={panelClass}>
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold">Incoming Messages</h2>
               <label className="flex items-center gap-2 text-sm">
@@ -602,7 +617,7 @@ export default function DashboardPage() {
             <div className="mt-2 flex gap-2">
               <button
                 onClick={() => void loadMessages()}
-                className="rounded-md border border-[#dbe3f4] px-3 py-1 text-[rgb(41,98,255)]"
+                className={btnNeutral}
               >
                 Refresh
               </button>
@@ -611,7 +626,7 @@ export default function DashboardPage() {
                   await fetch("/api/webhooks/messages", { method: "DELETE" });
                   setMessages([]);
                 }, "Messages cleared.")}
-                className="rounded-md border border-[#dbe3f4] px-3 py-1 text-[#FF6C40]"
+                className={btnDanger}
               >
                 Clear
               </button>
@@ -630,7 +645,7 @@ export default function DashboardPage() {
           </article>
         </section>
 
-        <section className="rounded-xl border border-[#dbe3f4] bg-white p-4">
+        <section className={panelClass}>
           <h2 className="text-xl font-semibold">Webhook Manager</h2>
           <p className="mt-1 text-sm">
             Manage multiple webhook URLs and event presets for <strong>{selectedSession || "no selected session"}</strong>.
@@ -655,7 +670,7 @@ export default function DashboardPage() {
             <button
               type="submit"
               disabled={!selectedSession || !newWebhookUrl.trim() || loading}
-              className="rounded-md bg-[#2D99FF] px-4 py-2 font-semibold text-white disabled:opacity-60"
+              className={`${btnPrimary} px-4 py-2`}
             >
               Add Webhook
             </button>
@@ -690,25 +705,25 @@ export default function DashboardPage() {
                         <div className="flex flex-wrap gap-1">
                           <button
                             onClick={() => void applyPreset(index, "minimal")}
-                            className="rounded border border-[#dbe3f4] px-2 py-1 text-xs text-[rgb(41,98,255)]"
+                            className={`${btnNeutral} rounded px-2 py-1 text-xs`}
                           >
                             Minimal
                           </button>
                           <button
                             onClick={() => void applyPreset(index, "messaging")}
-                            className="rounded border border-[#dbe3f4] px-2 py-1 text-xs text-[rgb(41,98,255)]"
+                            className={`${btnNeutral} rounded px-2 py-1 text-xs`}
                           >
                             Messaging
                           </button>
                           <button
                             onClick={() => void applyPreset(index, "debug")}
-                            className="rounded border border-[#dbe3f4] px-2 py-1 text-xs text-[rgb(41,98,255)]"
+                            className={`${btnNeutral} rounded px-2 py-1 text-xs`}
                           >
                             Debug
                           </button>
                           <button
                             onClick={() => void removeWebhook(index)}
-                            className="rounded border border-[#dbe3f4] px-2 py-1 text-xs text-[#FF6C40]"
+                            className={`${btnDanger} rounded px-2 py-1 text-xs`}
                           >
                             Remove
                           </button>
@@ -729,7 +744,7 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <section className="rounded-xl border border-[#dbe3f4] bg-white p-4">
+        <section className={panelClass}>
           <h2 className="text-xl font-semibold">Status</h2>
           <p className={`mt-2 text-sm ${statusMessage.toLowerCase().includes("fail") || statusMessage.toLowerCase().includes("error") ? "text-[#FF6C40]" : ""}`}>
             {statusMessage || "Ready"}
