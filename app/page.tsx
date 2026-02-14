@@ -82,12 +82,8 @@ function statusText(session?: Session | null): string {
   return (session?.status || session?.state || "UNKNOWN").toUpperCase();
 }
 
-function isWorking(status: string): boolean {
-  return status.includes("WORK");
-}
-
 function needsQrRefresh(status: string): boolean {
-  return !isWorking(status) && (status.includes("START") || status.includes("SCAN") || status.includes("QR"));
+  return status === "SCAN_QR_CODE";
 }
 
 function statusClass(status: string): string {
@@ -251,6 +247,11 @@ export default function DashboardPage() {
 
   const fetchQR = useCallback(async (sessionNameArg = selectedSession, silent = false) => {
     if (!sessionNameArg) return;
+    const status = statusText(sessionDetail);
+    if (status !== "SCAN_QR_CODE") {
+      if (!silent) setStatusMessage(`QR is available only in SCAN_QR_CODE status. Current: ${status}`);
+      return;
+    }
 
     const run = async () => {
       const response = await fetch(`/api/sessions/${encodeURIComponent(sessionNameArg)}/qr`);
@@ -265,7 +266,7 @@ export default function DashboardPage() {
     }
 
     await withStatus(run, "QR fetched.");
-  }, [selectedSession, withStatus]);
+  }, [selectedSession, sessionDetail, withStatus]);
 
   const fetchScreenshot = useCallback(async (sessionNameArg = selectedSession) => {
     if (!sessionNameArg) return;
@@ -605,7 +606,7 @@ export default function DashboardPage() {
               </button>
               <button
                 onClick={() => void fetchQR()}
-                disabled={!selectedSession || loading}
+                disabled={!selectedSession || loading || selectedStatus !== "SCAN_QR_CODE"}
                 className={btnNeutral}
               >
                 Fetch QR
