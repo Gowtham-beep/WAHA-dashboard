@@ -353,7 +353,7 @@ export default function DashboardPage() {
 
   async function addWebhook(e: FormEvent) {
     e.preventDefault();
-    const url = newWebhookUrl.trim();
+    const url = newWebhookUrl.trim().replace("/api/webhook/messages", "/api/webhooks/messages");
     if (!url || !selectedSession) return;
     const next = [...webhooks, defaultWebhook(url, EVENT_PRESETS[webhookPreset])];
     await saveWebhooks(next);
