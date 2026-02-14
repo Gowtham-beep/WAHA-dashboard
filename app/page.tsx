@@ -539,10 +539,22 @@ export default function DashboardPage() {
           "linear-gradient(135deg, rgba(130,106,249,0.14) 0%, rgba(45,153,255,0.12) 45%, rgba(44,217,197,0.1) 100%)",
       }}
     >
-      <header className="border-b border-[#dbe3f4] bg-white text-black backdrop-blur">
-        <div className="mx-auto flex max-w-[1800px] items-center justify-between px-4 py-4 sm:px-6">
-          <h1 className="text-2xl font-semibold sm:text-3xl">WAHA Ops Dashboard</h1>
-          <div className="text-sm sm:text-base">{selectedSession ? `Session: ${selectedSession}` : "No session selected"}</div>
+      <header className="border-b border-[#dbe3f4] bg-white/90 text-black backdrop-blur">
+        <div className="mx-auto max-w-[1800px] px-4 py-4 sm:px-6">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h1 className="text-2xl font-semibold leading-tight sm:text-3xl">WAHA Dashboard</h1>
+              <p className="mt-1 text-sm text-[#5a6b8a]">Session control, webhook monitoring, and message operations</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-full border border-[#1f5ecf] bg-[#e7f0ff] px-4 py-1.5 text-sm font-extrabold text-[#1f4ba8] shadow-[0_6px_16px_rgba(31,94,207,0.22)]">
+                {selectedSession ? `Session: ${selectedSession}` : "No session selected"}
+              </span>
+            </div>
+          </div>
+          <div className="mt-3 rounded-lg border border-[#dbe3f4] bg-[#f8fbff] px-3 py-2 text-xs text-[#5a6b8a]">
+            {loading ? "Working on request..." : statusMessage || "System ready"}
+          </div>
         </div>
       </header>
 
@@ -553,8 +565,8 @@ export default function DashboardPage() {
             <p className="mt-1 text-3xl font-bold">{sessions.length}</p>
           </article>
           <article className={panelClass}>
-            <p className="text-sm text-black">Current Status</p>
-            <p className={`mt-2 inline-block rounded-md border px-2 py-1 text-sm font-semibold ${statusClass(selectedStatusLabel)}`}>
+            <p className="text-sm text-black">Current Session Status</p>
+            <p className={`mt-2 inline-block rounded-md border px-3 py-1 text-sm font-semibold ${statusClass(selectedStatusLabel)}`}>
               {selectedStatusLabel}
             </p>
           </article>
@@ -848,7 +860,7 @@ export default function DashboardPage() {
                 ) : chatItems.length > 0 ? (
                   <>
                     <div className="max-h-44 overflow-auto">
-                      {chatItems.slice(0, 6).map((chat, index) => {
+                      {[...chatItems].reverse().slice(0, 6).map((chat, index) => {
                         const id = String(chat.id ?? chat.chatId ?? chat.wid ?? `chat-${index + 1}`);
                         const label = String(chat.name ?? chat.title ?? chat.subject ?? id);
                         return (
@@ -1063,12 +1075,6 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <section className={panelClass}>
-          <h2 className="text-xl font-semibold">Status</h2>
-          <p className={`mt-2 text-sm ${statusMessage.toLowerCase().includes("fail") || statusMessage.toLowerCase().includes("error") ? "text-[#FF6C40]" : ""}`}>
-            {statusMessage || "Ready"}
-          </p>
-        </section>
       </main>
       <ScreenshotModal
         open={isScreenshotModalOpen}
