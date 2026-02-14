@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { WebhookMessage } from "@/lib/waha-api";
+import { broadcastWebhookEvent } from "@/lib/webhook-stream";
 
 // In-memory storage for received messages but use a database in production
 let receivedMessages: WebhookMessage[] = [];
+
+function normalizeTimestampMs(timestamp: unknown): number {
+  if (typeof timestamp !== "number" || !Number.isFinite(timestamp)) return Date.now();
+  return timestamp < 1e12 ? timestamp * 1000 : timestamp;
+}
 
 function isDuplicateWebhookMessage(
   existing: WebhookMessage,
@@ -39,8 +45,6 @@ export async function POST(request: NextRequest) {
   try {
     const payload = (await request.json()) as unknown;
 
-    console.log("Webhook received:", payload);
-
     if (!isWebhookMessage(payload)) {
       return NextResponse.json({
         success: true,
@@ -48,7 +52,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const normalizedTimestamp = payload.payload.timestamp || Date.now();
+    const normalizedTimestamp = normalizeTimestampMs(payload.payload.timestamp);
     const duplicateExists = receivedMessages.some((message) =>
       isDuplicateWebhookMessage(message, payload, normalizedTimestamp),
     );
@@ -66,6 +70,15 @@ export async function POST(request: NextRequest) {
         ...payload.payload,
         timestamp: normalizedTimestamp,
       },
+    });
+
+    broadcastWebhookEvent({
+      ...payload,
+      payload: {
+        ...payload.payload,
+        timestamp: normalizedTimestamp,
+      },
+      timestamp: Date.now(),
     });
 
     if (receivedMessages.length > 100) {
@@ -97,7 +110,13 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "50", 10);
     const safeLimit = Number.isNaN(limit) ? 50 : Math.max(1, Math.min(limit, 100));
 
-    let messages = [...receivedMessages];
+    let messages = receivedMessages.map((message) => ({
+      ...message,
+      payload: {
+        ...message.payload,
+        timestamp: normalizeTimestampMs(message.payload.timestamp),
+      },
+    }));
 
     if (session) {
       messages = messages.filter((msg) => msg.session === session);

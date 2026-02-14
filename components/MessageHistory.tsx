@@ -13,6 +13,7 @@ type WebhookMessage = {
     body: string;
     hasMedia: boolean;
   };
+  timestamp?: number;
 };
 
 type MessageHistoryProps = {
@@ -87,6 +88,38 @@ export default function MessageHistory({ selectedSession, refreshTrigger }: Mess
 
     return () => clearInterval(timer);
   }, [autoRefresh, loadMessages]);
+
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (selectedSession) params.set("session", selectedSession);
+    const streamUrl = `/api/webhooks/stream${params.toString() ? `?${params.toString()}` : ""}`;
+    const stream = new EventSource(streamUrl);
+
+    stream.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data) as WebhookMessage | { type?: string };
+        if ("type" in data && data.type === "connected") return;
+        if (!("payload" in data) || !data.payload?.id) return;
+
+        setMessages((prev) => {
+          const duplicate = prev.some(
+            (msg) =>
+              msg.session === data.session &&
+              msg.payload.id === data.payload.id &&
+              msg.payload.timestamp === data.payload.timestamp,
+          );
+          if (duplicate) return prev;
+          return [data as WebhookMessage, ...prev].slice(0, 100);
+        });
+      } catch {
+        // Ignore malformed SSE payloads
+      }
+    };
+
+    return () => {
+      stream.close();
+    };
+  }, [selectedSession]);
 
   return (
     <section className="rounded-lg border border-[#dbe3f4] bg-white p-4 shadow-sm backdrop-blur">

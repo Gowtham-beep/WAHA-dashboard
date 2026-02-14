@@ -483,6 +483,36 @@ export default function DashboardPage() {
   }, [autoMessageRefresh, loadMessages]);
 
   useEffect(() => {
+    const stream = new EventSource("/api/webhooks/stream");
+
+    stream.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data) as WebhookMessage | { type?: string };
+        if ("type" in data && data.type === "connected") return;
+        if (!("payload" in data) || !data.payload?.id) return;
+        if (selectedSession && data.session !== selectedSession) return;
+
+        setMessages((prev) => {
+          const duplicate = prev.some(
+            (msg) =>
+              msg.session === data.session &&
+              msg.payload.id === data.payload.id &&
+              msg.payload.timestamp === data.payload.timestamp,
+          );
+          if (duplicate) return prev;
+          return [data as WebhookMessage, ...prev].slice(0, 100);
+        });
+      } catch {
+        // Ignore malformed SSE payloads
+      }
+    };
+
+    return () => {
+      stream.close();
+    };
+  }, [selectedSession]);
+
+  useEffect(() => {
     if (!autoSessionRefresh || !selectedSession) return;
     const timer = setInterval(() => void loadSessionDetail(selectedSession), 4000);
     return () => clearInterval(timer);
