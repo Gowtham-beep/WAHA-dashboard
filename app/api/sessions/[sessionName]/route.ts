@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { wahaClient } from "@/lib/waha-api";
+import { getClientForSession } from "@/lib/waha-client-registry";
 
 type Params = {
   params: Promise<{ sessionName: string }>;
@@ -8,7 +8,7 @@ type Params = {
 export async function GET(_request: NextRequest, { params }: Params) {
   try {
     const { sessionName } = await params;
-    const session = await wahaClient.getSession(sessionName);
+    const session = await getClientForSession(sessionName).getSession(sessionName);
     return NextResponse.json({ success: true, data: session });
   } catch (error: unknown) {
     return NextResponse.json(

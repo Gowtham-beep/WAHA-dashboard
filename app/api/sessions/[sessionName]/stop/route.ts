@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { wahaClient } from "@/lib/waha-api";
+import { getClientForSession } from "@/lib/waha-client-registry";
 
 type Params = {
   params: Promise<{ sessionName: string }>;
@@ -8,7 +8,7 @@ type Params = {
 export async function POST(_request: NextRequest, { params }: Params) {
   try {
     const { sessionName } = await params;
-    await wahaClient.stopSession(sessionName);
+    await getClientForSession(sessionName).stopSession(sessionName);
     return NextResponse.json({ success: true, message: "Session stopped" });
   } catch (error: unknown) {
     return NextResponse.json(

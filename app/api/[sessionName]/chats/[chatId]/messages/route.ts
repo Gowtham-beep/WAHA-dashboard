@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { wahaClient } from "@/lib/waha-api";
+import { getClientForSession } from "@/lib/waha-client-registry";
 
 type Params = {
   params: Promise<{ sessionName: string; chatId: string }>;
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest, { params }: Params) {
         : "messageTimestamp";
     const sortOrder = sortOrderParam === "asc" || sortOrderParam === "desc" ? sortOrderParam : "desc";
 
-    const data = await wahaClient.getChatMessages(sessionName, decodeURIComponent(chatId), {
+    const data = await getClientForSession(sessionName).getChatMessages(sessionName, decodeURIComponent(chatId), {
       limit,
       offset,
       downloadMedia,

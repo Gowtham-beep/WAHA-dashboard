@@ -252,7 +252,12 @@ export const wahaClient = new WAHAClient({
   apiKey: process.env.WAHA_API_KEY || "your-api-key",
 });
 
+export function createWAHAClient(config: WAHAConfig): WAHAClient {
+  return new WAHAClient(config);
+}
+
 export type {
+  WAHAConfig,
   Session,
   SendMessageRequest,
   SendMessageResponse,

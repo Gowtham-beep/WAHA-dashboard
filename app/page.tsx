@@ -156,6 +156,9 @@ export default function DashboardPage() {
   const [autoSessionRefresh, setAutoSessionRefresh] = useState(true);
 
   const [sessionName, setSessionName] = useState("");
+  const [wahaApiUrl, setWahaApiUrl] = useState("");
+  const [wahaApiKey, setWahaApiKey] = useState("");
+  const [isCreateSessionModalOpen, setIsCreateSessionModalOpen] = useState(false);
   const [sessionSearch, setSessionSearch] = useState("");
   const [accountSearch, setAccountSearch] = useState("");
   const [chatId, setChatId] = useState("");
@@ -269,17 +272,24 @@ export default function DashboardPage() {
 
   async function startSession(e: FormEvent) {
     e.preventDefault();
-    if (!sessionName.trim()) return;
+    if (!sessionName.trim() || !wahaApiUrl.trim() || !wahaApiKey.trim()) return;
     await withStatus(async () => {
       const response = await fetch("/api/sessions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionName: sessionName.trim() }),
+        body: JSON.stringify({
+          sessionName: sessionName.trim(),
+          apiUrl: wahaApiUrl.trim(),
+          apiKey: wahaApiKey.trim(),
+        }),
       });
       const result = (await response.json()) as { success: boolean; error?: string };
       if (!response.ok || !result.success) throw new Error(result.error || "Failed to start session");
       setSelectedSession(sessionName.trim());
       setSessionName("");
+      setWahaApiUrl("");
+      setWahaApiKey("");
+      setIsCreateSessionModalOpen(false);
       await loadSessions();
       await loadSessionDetail(sessionName.trim());
     }, "Session started.");
@@ -591,21 +601,13 @@ export default function DashboardPage() {
             </div>
 
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <form onSubmit={startSession} className="flex flex-wrap items-center gap-2">
-                <button
-                  type="submit"
-                  disabled={loading || !sessionName.trim()}
-                  className={`${btnPrimary} px-4 py-2`}
-                >
-                  ▷ Start New
-                </button>
-                <input
-                  value={sessionName}
-                  onChange={(e) => setSessionName(e.target.value)}
-                  placeholder="Session name"
-                  className="rounded-md border border-[#dbe3f4] bg-[#ffffff] px-3 py-2 text-sm text-[#000000] outline-none"
-                />
-              </form>
+              <button
+                onClick={() => setIsCreateSessionModalOpen(true)}
+                disabled={loading}
+                className={`${btnPrimary} px-4 py-2`}
+              >
+                ▷ Start New
+              </button>
               <div className="flex items-center gap-2">
                 <input
                   value={sessionSearch}
@@ -1097,6 +1099,59 @@ export default function DashboardPage() {
         data={chatMessages}
         onClose={() => setIsChatMessagesModalOpen(false)}
       />
+      {isCreateSessionModalOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          onClick={() => setIsCreateSessionModalOpen(false)}
+        >
+          <div
+            className="w-full max-w-2xl rounded-xl border border-[#dbe3f4] bg-white p-4 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Create Session</h3>
+              <button
+                onClick={() => setIsCreateSessionModalOpen(false)}
+                className="rounded-md border border-[#dbe3f4] px-3 py-1 text-sm font-medium text-[rgb(41,98,255)] hover:bg-[#f3f7ff]"
+              >
+                Close
+              </button>
+            </div>
+            <p className="mb-3 rounded-md border border-[#ffd9c7] bg-[#fff4ef] px-3 py-2 text-xs text-[#b54a2b]">
+              Warning: You must provide your own WAHA API URL and API key credentials to create a session.
+            </p>
+            <form onSubmit={startSession} className="space-y-2">
+              <input
+                value={sessionName}
+                onChange={(e) => setSessionName(e.target.value)}
+                placeholder="Session name"
+                className="w-full rounded-md border border-[#dbe3f4] bg-[#ffffff] px-3 py-2 text-sm text-[#000000] outline-none"
+              />
+              <input
+                value={wahaApiUrl}
+                onChange={(e) => setWahaApiUrl(e.target.value)}
+                placeholder="WAHA API URL (required)"
+                className="w-full rounded-md border border-[#dbe3f4] bg-[#ffffff] px-3 py-2 text-sm text-[#000000] outline-none"
+              />
+              <input
+                value={wahaApiKey}
+                onChange={(e) => setWahaApiKey(e.target.value)}
+                placeholder="WAHA API Key (required)"
+                className="w-full rounded-md border border-[#dbe3f4] bg-[#ffffff] px-3 py-2 text-sm text-[#000000] outline-none"
+              />
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  disabled={loading || !sessionName.trim() || !wahaApiUrl.trim() || !wahaApiKey.trim()}
+                  className={`${btnPrimary} px-4 py-2`}
+                >
+                  Create Session
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
