@@ -11,7 +11,19 @@ type Session = {
   name: string;
   status?: string;
   state?: string;
+  me?: {
+    id?: string;
+    pushName?: string;
+  };
 };
+
+enum SessionStatus {
+  STOPPED = "STOPPED",
+  STARTING = "STARTING",
+  SCAN_QR_CODE = "SCAN_QR_CODE",
+  WORKING = "WORKING",
+  FAILED = "FAILED",
+}
 
 type SessionWebhook = {
   url: string;
@@ -78,21 +90,35 @@ const EVENT_PRESETS: Record<string, string[]> = {
   ],
 };
 
-function statusText(session?: Session | null): string {
-  return (session?.status || session?.state || "UNKNOWN").toUpperCase();
+function getSessionStatus(session?: Session | null): SessionStatus | null {
+  const status = (session?.status || session?.state || "").toUpperCase();
+  if (Object.values(SessionStatus).includes(status as SessionStatus)) {
+    return status as SessionStatus;
+  }
+  return null;
 }
 
-function needsQrRefresh(status: string): boolean {
-  return status === "SCAN_QR_CODE";
+function statusText(session?: Session | null): string {
+  return getSessionStatus(session) || "UNKNOWN";
+}
+
+function needsQrRefresh(status: SessionStatus | null): boolean {
+  return status === SessionStatus.SCAN_QR_CODE;
 }
 
 function statusClass(status: string): string {
-  if (status.includes("WORK")) {
-    return "border-[rgb(41,98,255)] bg-[rgba(41,98,255,0.18)] text-[rgb(41,98,255)]";
+  switch (status) {
+    case SessionStatus.WORKING:
+      return "border-[rgb(41,98,255)] bg-[rgba(41,98,255,0.18)] text-[rgb(41,98,255)]";
+    case SessionStatus.STARTING:
+    case SessionStatus.SCAN_QR_CODE:
+      return "border-[#f2be4a]/40 bg-[#f2be4a]/15 text-[#8a6505]";
+    case SessionStatus.STOPPED:
+    case SessionStatus.FAILED:
+      return "border-[#FF6C40]/40 bg-[#FF6C40]/10 text-[#FF6C40]";
+    default:
+      return "border-[#dbe3f4] bg-white text-black";
   }
-  if (status.includes("STOP") || status.includes("FAIL"))
-    return "border-[#FF6C40]/40 bg-[#FF6C40]/10 text-[#FF6C40]";
-  return "border-[#dbe3f4] bg-white text-black";
 }
 
 const panelClass =
@@ -130,16 +156,20 @@ export default function DashboardPage() {
   const [autoSessionRefresh, setAutoSessionRefresh] = useState(true);
 
   const [sessionName, setSessionName] = useState("");
+  const [sessionSearch, setSessionSearch] = useState("");
+  const [accountSearch, setAccountSearch] = useState("");
   const [chatId, setChatId] = useState("");
   const [text, setText] = useState("");
 
   const [newWebhookUrl, setNewWebhookUrl] = useState("");
   const [webhookPreset, setWebhookPreset] = useState<keyof typeof EVENT_PRESETS>("minimal");
+  const [sessionStatusFilter, setSessionStatusFilter] = useState<"ALL" | SessionStatus>("ALL");
 
   const [loading, setLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
 
-  const selectedStatus = statusText(sessionDetail || sessions.find((s) => s.name === selectedSession) || null);
+  const selectedStatus = getSessionStatus(sessionDetail || sessions.find((s) => s.name === selectedSession) || null);
+  const selectedStatusLabel = selectedStatus || "UNKNOWN";
   const webhooks = useMemo(() => sessionDetail?.config?.webhooks || [], [sessionDetail]);
   const webhookUrlCounts = useMemo(() => {
     const map = new Map<string, number>();
@@ -150,6 +180,28 @@ export default function DashboardPage() {
   }, [webhooks]);
   const duplicateWebhookCount = Array.from(webhookUrlCounts.values()).filter((c) => c > 1).length;
   const chatItems = useMemo(() => extractChatItems(chatsOverview), [chatsOverview]);
+  const filteredSessions = useMemo(() => {
+    let next =
+      sessionStatusFilter === "ALL"
+        ? sessions
+        : sessions.filter((session) => getSessionStatus(session) === sessionStatusFilter);
+
+    const nameQuery = sessionSearch.trim().toLowerCase();
+    if (nameQuery) {
+      next = next.filter((session) => {
+        const sessionNameValue = session.name.toLowerCase();
+        const pushNameValue = (session.me?.pushName || "").toLowerCase();
+        return sessionNameValue.includes(nameQuery) || pushNameValue.includes(nameQuery);
+      });
+    }
+
+    const accountQuery = accountSearch.trim().toLowerCase();
+    if (accountQuery) {
+      next = next.filter((session) => (session.me?.id || "").toLowerCase().includes(accountQuery));
+    }
+
+    return next;
+  }, [accountSearch, sessionSearch, sessionStatusFilter, sessions]);
 
   const loadSessions = useCallback(async () => {
     const response = await fetch("/api/sessions");
@@ -158,8 +210,24 @@ export default function DashboardPage() {
       throw new Error(result.error || "Failed to fetch sessions");
     }
     const next = result.data || [];
-    setSessions(next);
-    if (!selectedSession && next.length > 0) setSelectedSession(next[0].name);
+    const detailedSessions = await Promise.all(
+      next.map(async (session) => {
+        try {
+          const detailResponse = await fetch(`/api/sessions/${encodeURIComponent(session.name)}`);
+          const detailResult = (await detailResponse.json()) as {
+            success: boolean;
+            data?: Session;
+          };
+          if (!detailResponse.ok || !detailResult.success || !detailResult.data) return session;
+          return { ...session, ...detailResult.data };
+        } catch {
+          return session;
+        }
+      }),
+    );
+
+    setSessions(detailedSessions);
+    if (!selectedSession && detailedSessions.length > 0) setSelectedSession(detailedSessions[0].name);
   }, [selectedSession]);
 
   const loadSessionDetail = useCallback(async (sessionNameArg: string) => {
@@ -169,7 +237,11 @@ export default function DashboardPage() {
     if (!response.ok || !result.success) {
       throw new Error(result.error || "Failed to fetch session detail");
     }
-    setSessionDetail(result.data || null);
+    const detail = result.data || null;
+    setSessionDetail(detail);
+    if (detail) {
+      setSessions((prev) => prev.map((session) => (session.name === detail.name ? { ...session, ...detail } : session)));
+    }
   }, []);
 
   const loadMessages = useCallback(async () => {
@@ -248,9 +320,9 @@ export default function DashboardPage() {
 
   const fetchQR = useCallback(async (sessionNameArg = selectedSession, silent = false) => {
     if (!sessionNameArg) return;
-    const status = statusText(sessionDetail);
-    if (status !== "SCAN_QR_CODE") {
-      if (!silent) setStatusMessage(`QR is available only in SCAN_QR_CODE status. Current: ${status}`);
+    const status = getSessionStatus(sessionDetail);
+    if (status !== SessionStatus.SCAN_QR_CODE) {
+      if (!silent) setStatusMessage(`QR is available only in SCAN_QR_CODE status. Current: ${status || "UNKNOWN"}`);
       return;
     }
 
@@ -419,7 +491,7 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!selectedSession || !sessionDetail) return;
     if (sessionQR) return;
-    const status = statusText(sessionDetail);
+    const status = getSessionStatus(sessionDetail);
     if (!needsQrRefresh(status)) return;
 
     void fetchQR(selectedSession, true);
@@ -452,8 +524,8 @@ export default function DashboardPage() {
           </article>
           <article className={panelClass}>
             <p className="text-sm text-black">Current Status</p>
-            <p className={`mt-2 inline-block rounded-md border px-2 py-1 text-sm font-semibold ${statusClass(selectedStatus)}`}>
-              {selectedStatus}
+            <p className={`mt-2 inline-block rounded-md border px-2 py-1 text-sm font-semibold ${statusClass(selectedStatusLabel)}`}>
+              {selectedStatusLabel}
             </p>
           </article>
           <article className={panelClass}>
@@ -494,12 +566,11 @@ export default function DashboardPage() {
               </form>
               <div className="flex items-center gap-2">
                 <input
+                  value={sessionSearch}
+                  onChange={(e) => setSessionSearch(e.target.value)}
                   placeholder="Search by Name, Phone"
                   className="rounded-md border border-[#dbe3f4] bg-[#ffffff] px-3 py-2 text-sm text-[#111111] outline-none"
                 />
-                <button className={`${btnNeutral} px-3 py-2 text-[#111111]`}>
-                  Columns ▾
-                </button>
               </div>
             </div>
 
@@ -519,26 +590,39 @@ export default function DashboardPage() {
                     </th>
                     <th className="border-b border-[#dbe3f4] px-3 py-2">
                       <input
-                        placeholder="Session"
+                        value={sessionSearch}
+                        onChange={(e) => setSessionSearch(e.target.value)}
+                        placeholder="Session / Push Name"
                         className="w-full rounded-md border border-[#dbe3f4] bg-[#ffffff] px-2 py-1 text-[#111111] outline-none"
                       />
                     </th>
                     <th className="border-b border-[#dbe3f4] px-3 py-2">
                       <input
+                        value={accountSearch}
+                        onChange={(e) => setAccountSearch(e.target.value)}
                         placeholder="Account (Phone Number)"
                         className="w-full rounded-md border border-[#dbe3f4] bg-[#ffffff] px-2 py-1 text-[#111111] outline-none"
                       />
                     </th>
                     <th className="border-b border-[#dbe3f4] px-3 py-2">
-                      <select className="w-full rounded-md border border-[#dbe3f4] bg-[#ffffff] px-2 py-1 text-[#111111] outline-none">
-                        <option>Any</option>
+                      <select
+                        value={sessionStatusFilter}
+                        onChange={(e) => setSessionStatusFilter(e.target.value as "ALL" | SessionStatus)}
+                        className="w-full rounded-md border border-[#dbe3f4] bg-[#ffffff] px-2 py-1 text-[#111111] outline-none"
+                      >
+                        <option value="ALL">All</option>
+                        {Object.values(SessionStatus).map((status) => (
+                          <option key={status} value={status}>
+                            {status}
+                          </option>
+                        ))}
                       </select>
                     </th>
                     <th className="border-b border-[#dbe3f4] px-3 py-2" />
                   </tr>
                 </thead>
                 <tbody>
-                  {sessions.map((session) => {
+                  {filteredSessions.map((session) => {
                     const current = statusText(session);
                     const selected = selectedSession === session.name;
                     return (
@@ -549,8 +633,13 @@ export default function DashboardPage() {
                         <td className="px-3 py-3">
                           <div className="h-5 w-5 rounded border border-[#dbe3f4]" />
                         </td>
-                        <td className="px-3 py-3 font-medium">{session.name}</td>
-                        <td className="px-3 py-3 text-[#555555]">-</td>
+                        <td className="px-3 py-3 font-medium">
+                          {session.me?.pushName || session.name}
+                          {session.me?.pushName ? (
+                            <p className="text-xs font-normal text-[#666]">Session: {session.name}</p>
+                          ) : null}
+                        </td>
+                        <td className="px-3 py-3 text-[#555555]">{session.me?.id || "-"}</td>
                         <td className="px-3 py-3">
                           <span className={`rounded-md border px-2 py-0.5 text-xs font-semibold ${statusClass(current)}`}>
                             {current}
@@ -588,10 +677,10 @@ export default function DashboardPage() {
                       </tr>
                     );
                   })}
-                  {sessions.length === 0 ? (
+                  {filteredSessions.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="px-3 py-4 text-center text-[#555555]">
-                        No sessions available.
+                        No sessions available for the selected status.
                       </td>
                     </tr>
                   ) : null}
@@ -612,7 +701,7 @@ export default function DashboardPage() {
               </button>
               <button
                 onClick={() => void fetchQR()}
-                disabled={!selectedSession || loading || selectedStatus !== "SCAN_QR_CODE"}
+                disabled={!selectedSession || loading || selectedStatus !== SessionStatus.SCAN_QR_CODE}
                 className={btnNeutral}
               >
                 Fetch QR
