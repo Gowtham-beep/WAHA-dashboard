@@ -57,7 +57,9 @@ app/
     [sessionName]/chats/overview  # GET chats overview
     [sessionName]/chats/[chatId]/messages # GET chat messages
     messages/send/route.ts        # POST send WhatsApp text message
+    webhook/messages/route.ts     # Backward-compatible alias route
     webhooks/messages/route.ts    # POST receive webhook, GET history, DELETE clear
+    webhooks/stream/route.ts      # SSE stream for real-time webhook UI updates
   page.tsx                        # Main dashboard page
 components/
   ScreenshotModal.tsx             # Large screenshot popup
@@ -80,6 +82,7 @@ WAHA_PASSWORD=your_waha_password_optional
 Notes:
 - `WAHA_API_URL` should be your WAHA server base URL.
 - `WAHA_API_KEY` must match the WAHA `X-Api-Key`.
+- Session creation uses these server-side env credentials (there is no per-user credential entry flow).
 - Current code also has safe local fallbacks in `lib/waha-api.ts`.
 
 ## API Endpoints (Internal)
@@ -123,12 +126,18 @@ Behavior:
 `POST /api/webhooks/messages`
 - Receives incoming message payloads from WAHA webhook events.
 
+`GET /api/webhooks/stream`
+- Server-Sent Events stream for real-time webhook updates in the UI.
+
 `GET /api/webhooks/messages?session=default&limit=50`
 - Returns stored incoming messages.
 - Supports optional session filter and limit.
 
 `DELETE /api/webhooks/messages`
 - Clears stored messages.
+
+`POST|GET|DELETE /api/webhook/messages`
+- Backward-compatible singular-path alias to `/api/webhooks/messages`.
 
 ### 4) QR + Screenshot
 
@@ -153,8 +162,9 @@ Behavior:
 - Screenshot fetch + large popup preview
 - Chats overview fetch + large popup
 - Per-chat message fetch + large popup
+- Send message directly from chat message modal
 - Message send panel
-- Incoming webhook history with refresh/clear
+- Incoming webhook history with refresh/clear + real-time stream updates
 
 ## Running Locally
 
