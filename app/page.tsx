@@ -118,6 +118,7 @@ export default function DashboardPage() {
   const [sessionScreenshot, setSessionScreenshot] = useState("");
   const [isScreenshotModalOpen, setIsScreenshotModalOpen] = useState(false);
   const [chatsOverview, setChatsOverview] = useState<unknown>(null);
+  const [isChatsOverviewLoading, setIsChatsOverviewLoading] = useState(false);
   const [isChatsModalOpen, setIsChatsModalOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState<unknown>(null);
   const [isChatMessagesModalOpen, setIsChatMessagesModalOpen] = useState(false);
@@ -286,15 +287,20 @@ export default function DashboardPage() {
 
   const fetchChatsOverview = useCallback(async (sessionNameArg = selectedSession, limit = 20) => {
     if (!sessionNameArg) return;
-    await withStatus(async () => {
-      const response = await fetch(
-        `/api/${encodeURIComponent(sessionNameArg)}/chats/overview?limit=${limit}`,
-      );
-      const result = (await response.json()) as { success: boolean; data?: unknown; error?: string };
-      if (!response.ok || !result.success) throw new Error(result.error || "Failed to fetch chats overview");
-      setChatsOverview(result.data ?? null);
-      setIsChatsModalOpen(true);
-    }, "Chats overview fetched.");
+    setIsChatsOverviewLoading(true);
+    try {
+      await withStatus(async () => {
+        const response = await fetch(
+          `/api/${encodeURIComponent(sessionNameArg)}/chats/overview?limit=${limit}`,
+        );
+        const result = (await response.json()) as { success: boolean; data?: unknown; error?: string };
+        if (!response.ok || !result.success) throw new Error(result.error || "Failed to fetch chats overview");
+        setChatsOverview(result.data ?? null);
+        setIsChatsModalOpen(true);
+      }, "Chats overview fetched.");
+    } finally {
+      setIsChatsOverviewLoading(false);
+    }
   }, [selectedSession, withStatus]);
 
   const fetchChatMessages = useCallback(
@@ -676,7 +682,7 @@ export default function DashboardPage() {
                     <pre className="max-h-36 overflow-auto text-xs">{sessionQR}</pre>
                   )
                 ) : (
-                  <p className="text-xs text-[#666]">No QR loaded.</p>
+                  <p className="text-xs text-[#666]">You are already logged in.</p>
                 )}
               </div>
               <div className="rounded-md border border-[#dbe3f4] bg-white p-3">
@@ -713,7 +719,14 @@ export default function DashboardPage() {
               </div>
               <div className="rounded-md border border-[#dbe3f4] bg-white p-3">
                 <p className="mb-1 text-sm font-semibold">Chats Overview</p>
-                {chatItems.length > 0 ? (
+                {isChatsOverviewLoading ? (
+                  <div className="space-y-2 animate-pulse">
+                    <div className="h-3 w-1/2 rounded bg-[#dbe3f4]" />
+                    <div className="h-3 w-5/6 rounded bg-[#dbe3f4]" />
+                    <div className="h-3 w-2/3 rounded bg-[#dbe3f4]" />
+                    <p className="text-xs text-[#666]">Loading chats...</p>
+                  </div>
+                ) : chatItems.length > 0 ? (
                   <>
                     <div className="max-h-44 overflow-auto">
                       {chatItems.slice(0, 6).map((chat, index) => {
