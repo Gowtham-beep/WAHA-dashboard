@@ -179,7 +179,7 @@ export default function DashboardPage() {
     return map;
   }, [webhooks]);
   const duplicateWebhookCount = Array.from(webhookUrlCounts.values()).filter((c) => c > 1).length;
-  const chatItems = useMemo(() => extractChatItems(chatsOverview), [chatsOverview]);
+  const chatItems = useMemo(() => [...extractChatItems(chatsOverview)].reverse(), [chatsOverview]);
   const filteredSessions = useMemo(() => {
     let next =
       sessionStatusFilter === "ALL"

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { formatTimestampIST } from "@/lib/time";
 
 type ChatMessagesModalProps = {
@@ -45,7 +45,7 @@ function pickString(value: unknown, fallback = ""): string {
 }
 
 function toRows(data: unknown): MessageRow[] {
-  return asList(data).map((item, index) => {
+  return [...asList(data)].reverse().map((item, index) => {
     const rec = asRecord(item) || {};
     const id = pickString(rec.id, `msg-${index + 1}`);
     const from = pickString(rec.from ?? rec.author ?? rec.participant, "unknown");
@@ -65,6 +65,10 @@ export default function ChatMessagesModal({
   data,
   onClose,
 }: ChatMessagesModalProps) {
+  const [draftMessage, setDraftMessage] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState("");
+
   useEffect(() => {
     if (!open) return;
     const onKeyDown = (event: KeyboardEvent) => {
@@ -75,6 +79,52 @@ export default function ChatMessagesModal({
   }, [open, onClose]);
 
   const rows = useMemo(() => toRows(data), [data]);
+  const [localRows, setLocalRows] = useState<MessageRow[]>([]);
+
+  useEffect(() => {
+    setLocalRows(rows);
+  }, [rows]);
+
+  async function sendMessageFromModal() {
+    if (!sessionName || !chatId || !draftMessage.trim() || sending) return;
+    setSending(true);
+    setSendError("");
+
+    try {
+      const response = await fetch("/api/messages/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          session: sessionName,
+          chatId,
+          text: draftMessage.trim(),
+        }),
+      });
+      const result = (await response.json()) as { success: boolean; error?: string };
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "Failed to send message");
+      }
+
+      const nextBody = draftMessage.trim();
+      const now = Date.now();
+      setDraftMessage("");
+      setLocalRows((prev) => [
+        ...prev,
+        {
+          id: `local-${now}`,
+          from: "You",
+          body: nextBody,
+          timestamp: formatTimestampIST(now),
+          fromMe: true,
+          hasMedia: false,
+        },
+      ]);
+    } catch (error) {
+      setSendError(error instanceof Error ? error.message : "Failed to send message");
+    } finally {
+      setSending(false);
+    }
+  }
 
   if (!open) return null;
 
@@ -103,7 +153,7 @@ export default function ChatMessagesModal({
         </div>
         <div className="min-h-0 overflow-auto rounded-lg border border-[#dbe3f4] bg-[#f8fbff] p-3">
           <div className="space-y-2">
-            {rows.map((row) => (
+            {localRows.map((row) => (
               <div key={row.id} className="rounded-md border border-[#dbe3f4] bg-white p-2 text-sm">
                 <div className="mb-1 flex flex-wrap items-center gap-2 text-xs text-[#666]">
                   <span>{row.fromMe ? "You" : row.from}</span>
@@ -114,10 +164,29 @@ export default function ChatMessagesModal({
                 <p className="break-words">{row.body}</p>
               </div>
             ))}
-            {rows.length === 0 ? (
+            {localRows.length === 0 ? (
               <p className="py-6 text-center text-sm text-[#666]">No messages found in payload.</p>
             ) : null}
           </div>
+        </div>
+        <div className="mt-3 rounded-lg border border-[#dbe3f4] bg-[#f8fbff] p-3">
+          <p className="mb-2 text-xs text-[#666]">Send a message to this chat</p>
+          <div className="flex gap-2">
+            <input
+              value={draftMessage}
+              onChange={(e) => setDraftMessage(e.target.value)}
+              placeholder="Type your message..."
+              className="w-full rounded-md border border-[#dbe3f4] bg-white px-3 py-2 text-sm outline-none focus:border-[rgb(41,98,255)]"
+            />
+            <button
+              onClick={() => void sendMessageFromModal()}
+              disabled={!draftMessage.trim() || sending || !sessionName || !chatId}
+              className="rounded-md border border-transparent bg-[#2D99FF] px-4 py-2 text-sm font-medium text-white hover:bg-[#237fdd] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {sending ? "Sending..." : "Send"}
+            </button>
+          </div>
+          {sendError ? <p className="mt-2 text-xs text-[#FF6C40]">{sendError}</p> : null}
         </div>
       </div>
     </div>
