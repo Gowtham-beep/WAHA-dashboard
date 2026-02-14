@@ -411,13 +411,14 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!selectedSession || !sessionDetail) return;
+    if (sessionQR) return;
     const status = statusText(sessionDetail);
     if (!needsQrRefresh(status)) return;
 
     void fetchQR(selectedSession, true);
     const timer = setInterval(() => void fetchQR(selectedSession, true), 12000);
     return () => clearInterval(timer);
-  }, [fetchQR, selectedSession, sessionDetail]);
+  }, [fetchQR, selectedSession, sessionDetail, sessionQR]);
 
   const sessionTimestamps = Object.entries(sessionDetail?.timestamps || {});
 
