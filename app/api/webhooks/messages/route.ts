@@ -4,6 +4,20 @@ import { WebhookMessage } from "@/lib/waha-api";
 // In-memory storage for received messages but use a database in production
 let receivedMessages: WebhookMessage[] = [];
 
+function isDuplicateWebhookMessage(
+  existing: WebhookMessage,
+  incoming: WebhookMessage,
+  incomingTimestamp: number,
+): boolean {
+  return (
+    existing.session === incoming.session &&
+    existing.payload.id === incoming.payload.id &&
+    existing.payload.timestamp === incomingTimestamp &&
+    existing.payload.from === incoming.payload.from &&
+    existing.payload.body === incoming.payload.body
+  );
+}
+
 function isWebhookMessage(payload: unknown): payload is WebhookMessage {
   if (!payload || typeof payload !== "object") return false;
   const message = payload as Record<string, unknown>;
@@ -34,11 +48,23 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    const normalizedTimestamp = payload.payload.timestamp || Date.now();
+    const duplicateExists = receivedMessages.some((message) =>
+      isDuplicateWebhookMessage(message, payload, normalizedTimestamp),
+    );
+
+    if (duplicateExists) {
+      return NextResponse.json({
+        success: true,
+        message: "Duplicate webhook ignored",
+      });
+    }
+
     receivedMessages.push({
       ...payload,
       payload: {
         ...payload.payload,
-        timestamp: payload.payload.timestamp || Date.now(),
+        timestamp: normalizedTimestamp,
       },
     });
 
