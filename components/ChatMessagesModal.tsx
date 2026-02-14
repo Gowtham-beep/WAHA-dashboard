@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
+import { formatTimestampIST } from "@/lib/time";
 
 type ChatMessagesModalProps = {
   open: boolean;
@@ -49,7 +50,7 @@ function toRows(data: unknown): MessageRow[] {
     const id = pickString(rec.id, `msg-${index + 1}`);
     const from = pickString(rec.from ?? rec.author ?? rec.participant, "unknown");
     const body = pickString(rec.body, "(empty message)");
-    const timestamp = pickString(rec.timestamp ?? rec.messageTimestamp ?? rec.t, "-");
+    const timestamp = formatTimestampIST(rec.timestamp ?? rec.messageTimestamp ?? rec.t, "-");
     const fromMe = Boolean(rec.fromMe);
     const hasMedia = Boolean(rec.hasMedia);
     return { id, from, body, timestamp, fromMe, hasMedia };

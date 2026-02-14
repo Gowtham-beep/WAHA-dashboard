@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
+import { formatTimestampIST } from "@/lib/time";
 
 type ChatsOverviewModalProps = {
   open: boolean;
@@ -56,7 +57,7 @@ function getChatRows(data: unknown): ChatRow[] {
       "-",
     );
     const unread = pickString(rec.unreadCount ?? rec.unread ?? rec.unreadMessages ?? 0, "0");
-    return { id, title, lastMessage, timestamp, unread };
+    return { id, title, lastMessage, timestamp: formatTimestampIST(timestamp, "-"), unread };
   });
 }
 

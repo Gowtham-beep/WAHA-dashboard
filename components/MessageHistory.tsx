@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { formatTimestampIST } from "@/lib/time";
 
 type WebhookMessage = {
   event: string;
@@ -129,11 +130,14 @@ export default function MessageHistory({ selectedSession, refreshTrigger }: Mess
           <p className="text-sm text-[#666]">No messages yet.</p>
         ) : null}
 
-        {messages.map((msg) => (
-          <article key={msg.payload.id} className="rounded-md border border-[#dbe3f4] bg-[#f7f9ff] p-3">
+        {messages.map((msg, index) => (
+          <article
+            key={`${msg.session}_${msg.payload.id}_${msg.payload.timestamp}_${index}`}
+            className="rounded-md border border-[#dbe3f4] bg-[#f7f9ff] p-3"
+          >
             <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[#666]">
               <span>From: {msg.payload.from}</span>
-              <span>{new Date(msg.payload.timestamp).toLocaleString()}</span>
+              <span>{formatTimestampIST(msg.payload.timestamp)}</span>
             </div>
             <p className="mt-2 text-sm text-black">{msg.payload.body || "(empty message)"}</p>
             <p className="mt-1 text-xs text-[#666]">Session: {msg.session}</p>

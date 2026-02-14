@@ -5,6 +5,7 @@ import Image from "next/image";
 import ScreenshotModal from "@/components/ScreenshotModal";
 import ChatsOverviewModal from "@/components/ChatsOverviewModal";
 import ChatMessagesModal from "@/components/ChatMessagesModal";
+import { formatTimestampIST } from "@/lib/time";
 
 type Session = {
   name: string;
@@ -652,7 +653,7 @@ export default function DashboardPage() {
                   {sessionTimestamps.length === 0 ? "No timestamps." : null}
                   {sessionTimestamps.map(([key, value]) => (
                     <p key={key}>
-                      {key}: {new Date(value).toLocaleString()}
+                      {key}: {formatTimestampIST(value)}
                     </p>
                   ))}
                 </div>
@@ -814,10 +815,13 @@ export default function DashboardPage() {
             </div>
             <div className="mt-3 max-h-60 space-y-2 overflow-auto">
               {messages.length === 0 ? <p className="text-sm">No messages yet.</p> : null}
-              {messages.map((message) => (
-                <div key={message.payload.id} className="rounded-md border border-[#dbe3f4] bg-white p-2 text-sm">
+              {messages.map((message, index) => (
+                <div
+                  key={`${message.session}_${message.payload.id}_${message.payload.timestamp}_${index}`}
+                  className="rounded-md border border-[#dbe3f4] bg-white p-2 text-sm"
+                >
                   <p>
-                    <strong>{message.payload.from}</strong> - {new Date(message.payload.timestamp).toLocaleString()}
+                    <strong>{message.payload.from}</strong> - {formatTimestampIST(message.payload.timestamp)}
                   </p>
                   <p>{message.payload.body || "(empty message)"}</p>
                 </div>
