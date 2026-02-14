@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
-import { getClientForSession, rememberSessionCredentials } from "@/lib/waha-client-registry";
+import { wahaClient } from "@/lib/waha-api";
 
 // GET /api/sessions - Fetch all WhatsApp sessions from WAHA.
 export async function GET() {
   try {
-    const client = getClientForSession();
-    const sessions = await client.getSessions();
+    const sessions = await wahaClient.getSessions();
 
     return NextResponse.json({
       success: true,
@@ -27,8 +26,8 @@ export async function GET() {
 // POST /api/sessions - Start a new WhatsApp session.
 export async function POST(request: Request) {
   try {
-    const body = (await request.json()) as { sessionName?: string; apiUrl?: string; apiKey?: string };
-    const { sessionName, apiUrl, apiKey } = body;
+    const body = (await request.json()) as { sessionName?: string };
+    const { sessionName } = body;
 
     if (!sessionName) {
       return NextResponse.json(
@@ -40,22 +39,7 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!apiUrl || !apiKey) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "WAHA API URL and API Key are required",
-        },
-        { status: 400 },
-      );
-    }
-
-    rememberSessionCredentials(sessionName, {
-      baseUrl: apiUrl,
-      apiKey,
-    });
-    const sessionClient = getClientForSession(sessionName);
-    const session = await sessionClient.startSession(sessionName);
+    const session = await wahaClient.startSession(sessionName);
 
     return NextResponse.json({
       success: true,

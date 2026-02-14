@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getClientForSession } from "@/lib/waha-client-registry";
+import { wahaClient } from "@/lib/waha-api";
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const screenshot = await getClientForSession(sessionName).getSessionScreenshot(sessionName);
+    const screenshot = await wahaClient.getSessionScreenshot(sessionName);
     return NextResponse.json({ success: true, data: screenshot });
   } catch (error: unknown) {
     return NextResponse.json(

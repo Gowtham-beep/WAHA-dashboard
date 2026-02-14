@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SessionWebhook } from "@/lib/waha-api";
-import { getClientForSession } from "@/lib/waha-client-registry";
+import { wahaClient } from "@/lib/waha-api";
 
 type Params = {
   params: Promise<{ sessionName: string }>;
@@ -9,8 +9,7 @@ type Params = {
 export async function GET(_request: NextRequest, { params }: Params) {
   try {
     const { sessionName } = await params;
-    const client = getClientForSession(sessionName);
-    const session = (await client.getSession(sessionName)) as {
+    const session = (await wahaClient.getSession(sessionName)) as {
       config?: { webhooks?: SessionWebhook[] };
     };
     return NextResponse.json({
@@ -31,14 +30,13 @@ export async function GET(_request: NextRequest, { params }: Params) {
 export async function PATCH(request: NextRequest, { params }: Params) {
   try {
     const { sessionName } = await params;
-    const client = getClientForSession(sessionName);
     const body = (await request.json()) as {
       webhookUrl?: string;
       webhooks?: SessionWebhook[];
     };
 
     if (Array.isArray(body.webhooks)) {
-      await client.updateSessionWebhooks(sessionName, body.webhooks);
+      await wahaClient.updateSessionWebhooks(sessionName, body.webhooks);
       return NextResponse.json({ success: true, message: "Webhooks updated" });
     }
 
@@ -49,7 +47,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       );
     }
 
-    await client.setWebhook(sessionName, body.webhookUrl);
+    await wahaClient.setWebhook(sessionName, body.webhookUrl);
     return NextResponse.json({ success: true, message: "Webhook updated" });
   } catch (error: unknown) {
     return NextResponse.json(

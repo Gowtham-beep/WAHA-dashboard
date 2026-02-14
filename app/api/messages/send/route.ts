@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getClientForSession } from "@/lib/waha-client-registry";
+import { wahaClient } from "@/lib/waha-api";
 
 type SendMessageBody = {
   session?: string;
@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
 
     const formattedChatId = chatId.includes("@") ? chatId : `${chatId}@c.us`;
 
-    const result = await getClientForSession(session).sendMessage({
+    const result = await wahaClient.sendMessage({
       session,
       chatId: formattedChatId,
       text,

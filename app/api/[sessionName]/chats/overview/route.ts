@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getClientForSession } from "@/lib/waha-client-registry";
+import { wahaClient } from "@/lib/waha-api";
 
 type Params = {
   params: Promise<{ sessionName: string }>;
@@ -10,7 +10,7 @@ export async function GET(request: NextRequest, { params }: Params) {
     const { sessionName } = await params;
     const limitParam = request.nextUrl.searchParams.get("limit");
     const limit = limitParam ? Number(limitParam) : 20;
-    const data = await getClientForSession(sessionName).getChatsOverview(sessionName, limit);
+    const data = await wahaClient.getChatsOverview(sessionName, limit);
 
     return NextResponse.json({ success: true, data });
   } catch (error: unknown) {
